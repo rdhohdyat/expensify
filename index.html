@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Duo Personal Hub</title>
+    <title>Duo Personal Hub + Savings</title>
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,12 +18,13 @@
         body { font-family: 'Nunito', sans-serif; background-color: #FFFFFF; color: #4B4B4B; }
         [x-cloak] { display: none !important; }
         
-        /* Duolingo Style Components */
         .duo-card { background: #FFFFFF; border: 2px solid #E5E5E5; border-bottom: 5px solid #E5E5E5; border-radius: 1.25rem; }
         .duo-btn-green { background: #58CC02; border-bottom: 5px solid #46A302; color: white; transition: all 0.1s; }
         .duo-btn-green:active { border-bottom-width: 0; transform: translateY(5px); }
         .duo-btn-blue { background: #1CB0F6; border-bottom: 5px solid #1899D6; color: white; transition: all 0.1s; }
         .duo-btn-blue:active { border-bottom-width: 0; transform: translateY(5px); }
+        .duo-btn-orange { background: #FF9600; border-bottom: 5px solid #E68700; color: white; transition: all 0.1s; }
+        .duo-btn-orange:active { border-bottom-width: 0; transform: translateY(5px); }
         .duo-btn-gray { background: #FFFFFF; border: 2px solid #E5E5E5; border-bottom: 4px solid #E5E5E5; color: #AFAFAF; }
         
         .duo-input { border: 2px solid #E5E5E5; border-bottom: 4px solid #E5E5E5; border-radius: 1rem; padding: 1rem; width: 100%; font-weight: 800; outline: none; transition: border-color 0.2s; }
@@ -71,7 +72,7 @@
                         <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
                             <div class="h-full bg-green-500 rounded-full transition-all duration-500 border-b-4 border-green-600" :style="`width: ${financeProgress}%`"></div>
                         </div>
-                        <p class="text-[10px] text-center font-black text-gray-400 uppercase" x-text="'Sisa: ' + formatIDR(wallet.dailyLimit - wallet.totalExpense)"></p>
+                        <p class="text-[10px] text-center font-black text-gray-400 uppercase" x-text="'Sisa Limit: ' + formatIDR(wallet.dailyLimit - wallet.totalExpense)"></p>
                     </div>
                 </div>
 
@@ -104,6 +105,51 @@
                             </div>
                         </div>
                     </template>
+                </div>
+            </div>
+
+            <div x-show="activeTab === 'savings'" x-cloak class="fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h4 class="font-black text-gray-700 text-2xl">Tabungan</h4>
+                    <button @click="showSavingModal = true; playSound('click')" class="duo-btn-orange p-3 rounded-xl">
+                        <i data-lucide="piggy-bank" class="w-5 h-5 stroke-[3]"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-6">
+                    <template x-for="item in savings" :key="item.id">
+                        <div class="duo-card p-5">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h5 class="text-lg font-black text-gray-700" x-text="item.title"></h5>
+                                    <p class="text-xs font-bold text-gray-400 uppercase" x-text="'Target: ' + formatIDR(item.target)"></p>
+                                </div>
+                                <button @click="deleteSaving(item.id)" class="text-gray-300 hover:text-red-500">
+                                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="space-y-2 mb-4">
+                                <div class="flex justify-between text-[10px] font-black uppercase">
+                                    <span class="text-orange-500" x-text="formatIDR(item.current)"></span>
+                                    <span class="text-gray-400" x-text="Math.round((item.current/item.target)*100) + '%'"></span>
+                                </div>
+                                <div class="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-orange-400 rounded-full transition-all duration-500 border-b-2 border-orange-600" 
+                                         :style="`width: ${Math.min((item.current/item.target)*100, 100)}%`"></div>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button @click="topUpSaving(item)" class="flex-1 py-2 duo-btn-green rounded-xl text-xs font-black">TAMBAH</button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                
+                <div x-show="savings.length === 0" class="text-center py-20">
+                    <i data-lucide="box" class="w-12 h-12 text-gray-200 mx-auto mb-4"></i>
+                    <p class="text-gray-400 font-bold">Belum ada rencana tabungan</p>
                 </div>
             </div>
 
@@ -177,18 +223,22 @@
         </main>
 
         <nav class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-100 p-3 z-50 md:absolute">
-            <div class="max-w-[360px] mx-auto flex justify-around items-center">
+            <div class="max-w-[400px] mx-auto flex justify-around items-center">
                 <button @click="activeTab = 'finance'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'finance' ? 'text-blue-500' : 'text-gray-300'">
-                    <i data-lucide="home" class="w-7 h-7 stroke-[2.5]"></i>
-                    <span class="text-[10px] font-black uppercase">Dompet</span>
+                    <i data-lucide="wallet" class="w-6 h-6 stroke-[2.5]"></i>
+                    <span class="text-[9px] font-black uppercase">Dompet</span>
+                </button>
+                <button @click="activeTab = 'savings'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'savings' ? 'text-orange-500' : 'text-gray-300'">
+                    <i data-lucide="piggy-bank" class="w-6 h-6 stroke-[2.5]"></i>
+                    <span class="text-[9px] font-black uppercase">Tabungan</span>
                 </button>
                 <button @click="activeTab = 'pomo'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'pomo' ? 'text-green-500' : 'text-gray-300'">
-                    <i data-lucide="target" class="w-7 h-7 stroke-[2.5]"></i>
-                    <span class="text-[10px] font-black uppercase">Fokus</span>
+                    <i data-lucide="target" class="w-6 h-6 stroke-[2.5]"></i>
+                    <span class="text-[9px] font-black uppercase">Fokus</span>
                 </button>
                 <button @click="activeTab = 'notes'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'notes' ? 'text-blue-400' : 'text-gray-300'">
-                    <i data-lucide="book-open" class="w-7 h-7 stroke-[2.5]"></i>
-                    <span class="text-[10px] font-black uppercase">Catatan</span>
+                    <i data-lucide="book-open" class="w-6 h-6 stroke-[2.5]"></i>
+                    <span class="text-[9px] font-black uppercase">Catatan</span>
                 </button>
             </div>
         </nav>
@@ -199,8 +249,14 @@
                 <div class="w-12 h-1.5 bg-gray-200 mx-auto mb-8 rounded-full"></div>
                 <h3 class="font-black text-gray-400 uppercase text-[10px] tracking-widest mb-4">Pengaturan Keuangan</h3>
                 <div class="space-y-4 mb-8">
-                    <input type="number" x-model.number="wallet.balance" class="duo-input" placeholder="Saldo Total">
-                    <input type="number" x-model.number="wallet.dailyLimit" class="duo-input" placeholder="Limit Harian">
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 ml-1">Saldo Total</label>
+                        <input type="number" x-model.number="wallet.balance" class="duo-input">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-400 ml-1">Limit Pengeluaran Harian</label>
+                        <input type="number" x-model.number="wallet.dailyLimit" class="duo-input">
+                    </div>
                 </div>
                 <h3 class="font-black text-gray-400 uppercase text-[10px] tracking-widest mb-4">Durasi Pomodoro (Menit)</h3>
                 <div class="grid grid-cols-2 gap-4 mb-10">
@@ -231,6 +287,27 @@
             </div>
         </div>
 
+        <div x-show="showSavingModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showSavingModal = false"></div>
+            <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200 fade-in">
+                <div class="w-12 h-1.5 bg-gray-200 mx-auto mb-8 rounded-full"></div>
+                <h3 class="font-black text-center text-gray-700 text-xl mb-6">Rencana Tabungan Baru</h3>
+                <input type="text" x-model="tempSaving.title" placeholder="Nama Goal (Contoh: iPhone)" class="duo-input mb-4">
+                <input type="number" x-model.number="tempSaving.target" placeholder="Target Nominal (Contoh: 5000000)" class="duo-input mb-8">
+                <button @click="addSaving()" class="w-full duo-btn-orange py-5 rounded-2xl font-black text-lg">MULAI MENABUNG</button>
+            </div>
+        </div>
+
+        <div x-show="showTopUpModal" x-cloak class="fixed inset-0 z-[70] flex items-end">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showTopUpModal = false"></div>
+            <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200 fade-in">
+                <h3 class="font-black text-center text-gray-700 text-xl mb-2" x-text="'Tabungan ' + (selectedSaving?.title || '')"></h3>
+                <p class="text-center text-gray-400 text-sm font-bold mb-6">Pindahkan dari saldo utama</p>
+                <input type="number" x-model.number="topUpAmount" placeholder="Nominal" class="w-full bg-transparent text-center text-4xl font-black text-gray-700 outline-none mb-8">
+                <button @click="confirmTopUp()" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg">KONFIRMASI</button>
+            </div>
+        </div>
+
         <div x-show="showTaskModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
             <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showTaskModal = false"></div>
             <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200">
@@ -257,7 +334,12 @@
             return {
                 activeTab: 'finance',
                 showFinanceModal: false, showLimitModal: false, showTaskModal: false, showNoteModal: false,
+                showSavingModal: false, showTopUpModal: false,
                 wallet: { balance: 2500000, dailyLimit: 200000, transactions: [], totalExpense: 0 },
+                savings: [],
+                tempSaving: { title: '', target: '' },
+                selectedSaving: null,
+                topUpAmount: '',
                 tempTrx: { type: 'expense', amount: '', note: '' },
                 pomo: { 
                     focusTime: 1500, breakTime: 300, timeLeft: 1500, 
@@ -268,33 +350,32 @@
 
                 init() {
                     this.requestNotification();
-                    const saved = localStorage.getItem('duo_hub_final');
+                    const saved = localStorage.getItem('duo_hub_final_v2');
                     if (saved) {
                         const data = JSON.parse(saved);
                         this.wallet = data.wallet || this.wallet;
                         this.pomo = {...this.pomo, ...data.pomo};
                         this.notes = data.notes || [];
+                        this.savings = data.savings || [];
                         this.pomo.isRunning = false;
                         this.pomo.timer = null;
                     }
                     this.$nextTick(() => lucide.createIcons());
                     this.$watch('wallet', () => this.saveData());
+                    this.$watch('savings', () => this.saveData());
                     this.$watch('pomo.tasks', () => this.saveData());
                     this.$watch('notes', () => this.saveData());
                 },
 
                 requestNotification() {
-                    if ("Notification" in window) {
-                        Notification.requestPermission();
-                    }
+                    if ("Notification" in window) Notification.requestPermission();
                 },
 
                 sendNotification(title, body) {
                     if ("Notification" in window && Notification.permission === "granted") {
                         new Notification(title, {
                             body: body,
-                            icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968746.png',
-                            vibrate: [200, 100, 200]
+                            icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968746.png'
                         });
                     }
                 },
@@ -302,6 +383,7 @@
                 saveData() {
                     const data = { 
                         wallet: this.wallet, 
+                        savings: this.savings,
                         pomo: { 
                             tasks: this.pomo.tasks, 
                             customFocus: this.pomo.customFocus, 
@@ -313,13 +395,13 @@
                         }, 
                         notes: this.notes 
                     };
-                    localStorage.setItem('duo_hub_final', JSON.stringify(data));
+                    localStorage.setItem('duo_hub_final_v2', JSON.stringify(data));
                     this.$nextTick(() => lucide.createIcons());
                 },
 
                 playSound(type) {
                     const audio = document.getElementById(`snd-${type}`);
-                    if(audio) { audio.currentTime = 0; audio.play().catch(e => console.log('Audio error')); }
+                    if(audio) { audio.currentTime = 0; audio.play().catch(e => {}); }
                 },
 
                 getGreeting() {
@@ -339,6 +421,7 @@
                     return Math.min(Math.round((this.wallet.totalExpense / this.wallet.dailyLimit) * 100), 100) || 0;
                 },
 
+                // Finance Logic
                 addTransaction() {
                     if(!this.tempTrx.amount || !this.tempTrx.note) return;
                     const amt = Number(this.tempTrx.amount);
@@ -351,7 +434,6 @@
                     this.playSound('ding');
                     this.showFinanceModal = false;
                     this.tempTrx = { type: 'expense', amount: '', note: '' };
-                    this.saveData();
                 },
 
                 deleteTransaction(id) {
@@ -362,13 +444,61 @@
                         else { this.wallet.balance += trx.amount; this.wallet.totalExpense -= trx.amount; }
                         this.wallet.transactions.splice(index, 1);
                         this.playSound('click');
-                        this.saveData();
                     }
                 },
 
+                // Savings Logic
+                addSaving() {
+                    if(!this.tempSaving.title || !this.tempSaving.target) return;
+                    this.savings.push({
+                        id: Date.now(),
+                        title: this.tempSaving.title,
+                        target: Number(this.tempSaving.target),
+                        current: 0
+                    });
+                    this.tempSaving = { title: '', target: '' };
+                    this.showSavingModal = false;
+                    this.playSound('ding');
+                },
+
+                topUpSaving(item) {
+                    this.selectedSaving = item;
+                    this.showTopUpModal = true;
+                    this.topUpAmount = '';
+                    this.playSound('click');
+                },
+
+                confirmTopUp() {
+                    const amt = Number(this.topUpAmount);
+                    if(amt <= 0 || amt > this.wallet.balance) {
+                        alert("Saldo tidak cukup!");
+                        return;
+                    }
+                    this.selectedSaving.current += amt;
+                    this.wallet.balance -= amt;
+                    
+                    // Catat di riwayat
+                    this.wallet.transactions.unshift({
+                        id: Date.now(), type: 'expense', amount: amt, note: `Nabung: ${this.selectedSaving.title}`,
+                        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                    });
+
+                    this.showTopUpModal = false;
+                    this.playSound('ding');
+                },
+
+                deleteSaving(id) {
+                    if(confirm('Batalkan tabungan ini? Saldo akan kembali ke dompet.')) {
+                        const item = this.savings.find(s => s.id === id);
+                        this.wallet.balance += item.current;
+                        this.savings = this.savings.filter(s => s.id !== id);
+                        this.playSound('click');
+                    }
+                },
+
+                // Pomodoro Logic
                 getCircleOffset() {
                     const total = this.pomo.mode === 'focus' ? this.pomo.focusTime : this.pomo.breakTime;
-                    if (!total || total === 0) return 691;
                     return 691 - (691 * this.pomo.timeLeft) / total;
                 },
 
@@ -397,8 +527,6 @@
                                 clearInterval(this.pomo.timer);
                                 this.pomo.isRunning = false;
                                 this.playSound('ding');
-                                const msg = this.pomo.mode === 'focus' ? 'Waktunya istirahat sejenak!' : 'Kembali fokus yuk!';
-                                this.sendNotification("Waktu Habis!", msg);
                                 this.switchMode();
                             }
                         }, 1000);
@@ -412,7 +540,6 @@
                         clearInterval(this.pomo.timer);
                         this.pomo.isRunning = false;
                     }
-                    this.saveData();
                 },
 
                 resetTimer() {
@@ -425,26 +552,23 @@
                     if(!this.tempTask) return;
                     this.pomo.tasks.push({ id: Date.now(), title: this.tempTask, done: false });
                     this.tempTask = ''; this.showTaskModal = false; this.playSound('click');
-                    this.saveData();
                 },
 
                 deleteTask(id) {
                     this.pomo.tasks = this.pomo.tasks.filter(t => t.id !== id);
-                    this.saveData();
                 },
 
+                // Note Logic
                 addNote() {
                     if(!this.tempNote.title) return;
                     this.notes.unshift({ id: Date.now(), ...this.tempNote });
                     this.tempNote = { title: '', content: '' };
                     this.showNoteModal = false; this.playSound('click');
-                    this.saveData();
                 },
 
                 deleteNote(id) { 
                     this.notes = this.notes.filter(n => n.id !== id); 
                     this.playSound('click'); 
-                    this.saveData();
                 }
             }
         }

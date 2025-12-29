@@ -300,14 +300,13 @@
                     if(audio) { audio.currentTime = 0; audio.play().catch(e => console.log('Audio error')); }
                 },
 
-                getGreeting() {
+               getGreeting() {
                     const hrs = new Date().getHours();
-                    if (hrs < 12) return "Pagi, Ridho!";
-                    if (hrs < 15) return "Siang, Ridho!";
-                    if (hrs < 18) return "Pagi, Ridho!";
+                    if (hrs >= 5 && hrs < 11) return "Pagi, Ridho!";
+                    if (hrs >= 11 && hrs < 15) return "Siang, Ridho!";
+                    if (hrs >= 15 && hrs < 18) return "Sore, Ridho!"; // Sebelumnya tertulis Pagi
                     return "Malam, Ridho!";
-                },
-
+                }
 
                 formatIDR(num) {
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num || 0);

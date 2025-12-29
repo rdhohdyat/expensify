@@ -261,6 +261,8 @@
                 tempTask: '', notes: [], tempNote: { title: '', content: '' },
 
                 init() {
+                    this.requestNotification();
+                    
                     const saved = localStorage.getItem('duo_hub_final');
                     if (saved) {
                         const data = JSON.parse(saved);
@@ -275,6 +277,23 @@
                     this.$watch('wallet', () => this.saveData());
                     this.$watch('pomo.tasks', () => this.saveData());
                     this.$watch('notes', () => this.saveData());
+                },
+
+                requestNotification() {
+                    if ("Notification" in window) {
+                        Notification.requestPermission();
+                    }
+                },
+
+                // FUNGSI BARU: Kirim Notifikasi
+                sendNotification(title, body) {
+                    if ("Notification" in window && Notification.permission === "granted") {
+                        new Notification(title, {
+                            body: body,
+                            icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968746.png',
+                            vibrate: [200, 100, 200]
+                        });
+                    }
                 },
 
                 saveData() {
@@ -376,6 +395,8 @@
                                 clearInterval(this.pomo.timer);
                                 this.pomo.isRunning = false;
                                 this.playSound('ding');
+                                const msg = this.pomo.mode === 'focus' ? 'Waktunya istirahat sejenak!' : 'Kembali fokus yuk!';
+                                this.sendNotification("Waktu Habis!", msg);
                                 this.switchMode();
                             }
                         }, 1000);

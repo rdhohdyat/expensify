@@ -50,7 +50,7 @@
         <main class="px-6 pb-32 pt-6">
             
             <div x-show="activeTab === 'finance'" x-cloak class="fade-in">
-                <div @click="showLimitModal = true; playSound('click')" class="duo-card p-6 mb-8 border-blue-200 bg-blue-50/30 cursor-pointer hover:bg-blue-50">
+                <div @click="showLimitModal = true; playSound('click')" class="duo-card p-6 mb-8 border-blue-200 bg-blue-50/30 cursor-pointer">
                     <div class="flex justify-between items-start mb-1">
                         <p class="text-[11px] font-black text-blue-400 uppercase tracking-widest">Saldo Tersedia</p>
                         <i data-lucide="pencil" class="w-3 h-3 text-blue-300"></i>
@@ -78,7 +78,7 @@
 
                 <div class="space-y-4">
                     <template x-for="trx in wallet.transactions" :key="trx.id">
-                        <div class="duo-card p-4 flex items-center justify-between">
+                        <div class="duo-card p-4 flex items-center justify-between group">
                             <div class="flex items-center gap-4">
                                 <div :class="trx.type === 'income' ? 'bg-yellow-400 border-yellow-600' : 'bg-blue-400 border-blue-600'" 
                                      class="w-11 h-11 rounded-xl border-b-4 flex items-center justify-center text-white">
@@ -89,8 +89,13 @@
                                     <p class="text-[10px] text-gray-400 font-bold uppercase" x-text="trx.time"></p>
                                 </div>
                             </div>
-                            <p class="font-black" :class="trx.type === 'income' ? 'text-green-500' : 'text-gray-700'" 
-                               x-text="(trx.type === 'income' ? '+' : '-') + formatIDR(trx.amount).replace('Rp', '')"></p>
+                            <div class="flex items-center gap-3">
+                                <p class="font-black text-right" :class="trx.type === 'income' ? 'text-green-500' : 'text-gray-700'" 
+                                   x-text="(trx.type === 'income' ? '+' : '-') + formatIDR(trx.amount).replace('Rp', '')"></p>
+                                <button @click="deleteTransaction(trx.id)" class="text-gray-300 hover:text-red-500 transition-colors">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -107,7 +112,7 @@
                         <svg class="w-64 h-64 transform -rotate-90">
                             <circle cx="128" cy="128" r="110" stroke="#E5E5E5" stroke-width="12" fill="transparent" />
                             <circle cx="128" cy="128" r="110" :stroke="pomo.mode === 'focus' ? '#58CC02' : '#1CB0F6'" stroke-width="12" fill="transparent" 
-                                    stroke-dasharray="691" :stroke-dashoffset="691 - (691 * (pomo.timeLeft / (pomo.mode === 'focus' ? pomo.focusTime : pomo.breakTime)))"
+                                    stroke-dasharray="691" :stroke-dashoffset="getCircleOffset()"
                                     stroke-linecap="round" class="transition-all duration-1000 ease-linear" />
                         </svg>
                         <div class="absolute">
@@ -157,16 +162,16 @@
 
         <nav class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-100 p-3 z-50 md:absolute">
             <div class="max-w-[360px] mx-auto flex justify-around items-center">
-                <button @click="activeTab = 'finance'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'finance' ? 'text-blue-500 scale-110' : 'text-gray-300'">
-                    <i data-lucide="home" class="w-7 h-7 stroke-[2.5]" :class="activeTab === 'finance' && 'fill-current'"></i>
+                <button @click="activeTab = 'finance'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'finance' ? 'text-blue-500' : 'text-gray-300'">
+                    <i data-lucide="home" class="w-7 h-7 stroke-[2.5]"></i>
                     <span class="text-[10px] font-black uppercase">Dompet</span>
                 </button>
-                <button @click="activeTab = 'pomo'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'pomo' ? 'text-green-500 scale-110' : 'text-gray-300'">
-                    <i data-lucide="target" class="w-7 h-7 stroke-[2.5]" :class="activeTab === 'pomo' && 'fill-current'"></i>
+                <button @click="activeTab = 'pomo'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'pomo' ? 'text-green-500' : 'text-gray-300'">
+                    <i data-lucide="target" class="w-7 h-7 stroke-[2.5]"></i>
                     <span class="text-[10px] font-black uppercase">Fokus</span>
                 </button>
-                <button @click="activeTab = 'notes'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'notes' ? 'text-blue-400 scale-110' : 'text-gray-300'">
-                    <i data-lucide="book-open" class="w-7 h-7 stroke-[2.5]" :class="activeTab === 'notes' && 'fill-current'"></i>
+                <button @click="activeTab = 'notes'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'notes' ? 'text-blue-400' : 'text-gray-300'">
+                    <i data-lucide="book-open" class="w-7 h-7 stroke-[2.5]"></i>
                     <span class="text-[10px] font-black uppercase">Catatan</span>
                 </button>
             </div>
@@ -176,13 +181,11 @@
             <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showLimitModal = false"></div>
             <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200 overflow-y-auto max-h-[90vh] fade-in">
                 <div class="w-12 h-1.5 bg-gray-200 mx-auto mb-8 rounded-full"></div>
-                
                 <h3 class="font-black text-gray-400 uppercase text-[10px] tracking-widest mb-4">Pengaturan Keuangan</h3>
                 <div class="space-y-4 mb-8">
                     <input type="number" x-model.number="wallet.balance" class="duo-input" placeholder="Saldo Total">
                     <input type="number" x-model.number="wallet.dailyLimit" class="duo-input" placeholder="Limit Harian">
                 </div>
-
                 <h3 class="font-black text-gray-400 uppercase text-[10px] tracking-widest mb-4">Durasi Pomodoro (Menit)</h3>
                 <div class="grid grid-cols-2 gap-4 mb-10">
                     <div>
@@ -194,7 +197,6 @@
                         <input type="number" x-model.number="pomo.customBreak" @change="updatePomoTimes()" class="duo-input">
                     </div>
                 </div>
-                
                 <button @click="showLimitModal = false; playSound('click')" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg">SIMPAN</button>
             </div>
         </div>
@@ -220,7 +222,6 @@
                 <button @click="addTask()" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg">TAMBAH</button>
             </div>
         </div>
-
         <div x-show="showNoteModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
             <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showNoteModal = false"></div>
             <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200">
@@ -270,7 +271,7 @@
 
                 playSound(type) {
                     const audio = document.getElementById(`snd-${type}`);
-                    if(audio) { audio.currentTime = 0; audio.play().catch(e => console.log('Audio disabled')); }
+                    if(audio) { audio.currentTime = 0; audio.play().catch(e => console.log('Audio error')); }
                 },
 
                 getGreeting() {
@@ -303,9 +304,30 @@
                     this.tempTrx = { type: 'expense', amount: '', note: '' };
                 },
 
+                deleteTransaction(id) {
+                    const index = this.wallet.transactions.findIndex(t => t.id === id);
+                    if (index > -1) {
+                        const trx = this.wallet.transactions[index];
+                        // Kembalikan efek saldo saat dihapus
+                        if(trx.type === 'income') this.wallet.balance -= trx.amount;
+                        else { 
+                            this.wallet.balance += trx.amount; 
+                            this.wallet.totalExpense -= trx.amount;
+                        }
+                        this.wallet.transactions.splice(index, 1);
+                        this.playSound('click');
+                    }
+                },
+
+                getCircleOffset() {
+                    const total = this.pomo.mode === 'focus' ? this.pomo.focusTime : this.pomo.breakTime;
+                    if (!total || total === 0) return 0;
+                    return 691 - (691 * this.pomo.timeLeft) / total;
+                },
+
                 updatePomoTimes() {
-                    this.pomo.focusTime = this.pomo.customFocus * 60;
-                    this.pomo.breakTime = this.pomo.customBreak * 60;
+                    this.pomo.focusTime = parseInt(this.pomo.customFocus) * 60;
+                    this.pomo.breakTime = parseInt(this.pomo.customBreak) * 60;
                     this.resetTimer();
                 },
 

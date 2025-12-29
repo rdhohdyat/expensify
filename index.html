@@ -250,17 +250,21 @@
                 tempTask: '', notes: [], tempNote: { title: '', content: '' },
 
                 init() {
-                    const saved = localStorage.getItem('duo_hub_final');
-                    if (saved) {
-                        const data = JSON.parse(saved);
-                        this.wallet = data.wallet || this.wallet;
-                        this.pomo = {...this.pomo, ...data.pomo};
-                        this.notes = data.notes || [];
-                    }
-                    this.$nextTick(() => lucide.createIcons());
-                    this.$watch('wallet', () => this.saveData());
-                    this.$watch('pomo', () => this.saveData());
-                    this.$watch('notes', () => this.saveData());
+                    if ("Notification" in window) {
+                    Notification.requestPermission();
+                }
+                
+                const saved = localStorage.getItem('duo_hub_final');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    this.wallet = data.wallet || this.wallet;
+                    this.pomo = {...this.pomo, ...data.pomo};
+                    this.notes = data.notes || [];
+                }
+                this.$nextTick(() => lucide.createIcons());
+                this.$watch('wallet', () => this.saveData());
+                this.$watch('pomo', () => this.saveData());
+                this.$watch('notes', () => this.saveData());
                 },
 
                 saveData() {
@@ -268,6 +272,15 @@
                     localStorage.setItem('duo_hub_final', JSON.stringify(data));
                     this.$nextTick(() => lucide.createIcons());
                 },
+
+sendNotification(title, message) {
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification(title, {
+                        body: message,
+                        icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968746.png'
+                    });
+                }
+            },
 
                 playSound(type) {
                     const audio = document.getElementById(`snd-${type}`);
@@ -337,30 +350,34 @@
                     return `${m}:${s.toString().padStart(2, '0')}`;
                 },
 
-                toggleTimer() {
-                    if (this.pomo.isRunning) {
-                        clearInterval(this.pomo.timer);
-                        this.pomo.isRunning = false;
-                    } else {
-                        this.pomo.isRunning = true;
-                        this.pomo.timer = setInterval(() => {
-                            if (this.pomo.timeLeft > 0) {
-                                this.pomo.timeLeft--;
+               toggleTimer() {
+                if (this.pomo.isRunning) {
+                    clearInterval(this.pomo.timer);
+                    this.pomo.isRunning = false;
+                } else {
+                    this.pomo.isRunning = true;
+                    this.pomo.timer = setInterval(() => {
+                        if (this.pomo.timeLeft > 0) {
+                            this.pomo.timeLeft--;
+                        } else {
+                            clearInterval(this.pomo.timer);
+                            this.pomo.isRunning = false;
+                            this.playSound('ding');
+
+                            // LOGIKA NOTIFIKASI
+                            if(this.pomo.mode === 'focus') {
+                                this.sendNotification("Sesi Fokus Selesai!", "Waktunya istirahat sejenak, Ridho.");
+                                this.pomo.mode = 'break';
+                                this.pomo.timeLeft = this.pomo.breakTime;
                             } else {
-                                clearInterval(this.pomo.timer);
-                                this.pomo.isRunning = false;
-                                this.playSound('ding');
-                                if(this.pomo.mode === 'focus') {
-                                    this.pomo.mode = 'break';
-                                    this.pomo.timeLeft = this.pomo.breakTime;
-                                } else {
-                                    this.pomo.mode = 'focus';
-                                    this.pomo.timeLeft = this.pomo.focusTime;
-                                }
+                                this.sendNotification("Waktu Istirahat Habis!", "Ayo fokus lagi, Ridho!");
+                                this.pomo.mode = 'focus';
+                                this.pomo.timeLeft = this.pomo.focusTime;
                             }
-                        }, 1000);
-                    }
-                },
+                        }
+                    }, 1000);
+                }
+            },
 
                 resetTimer() {
                     clearInterval(this.pomo.timer);

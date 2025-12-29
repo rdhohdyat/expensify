@@ -1,0 +1,15 @@
+{
+  "name": "Duo Personal Hub",
+  "short_name": "DuoHub",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#58CC02",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5968/5968746.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

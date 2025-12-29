@@ -8,21 +8,27 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5968/5968746.png">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
         body { font-family: 'Nunito', sans-serif; background-color: #FFFFFF; color: #4B4B4B; }
         [x-cloak] { display: none !important; }
+        
+        /* Duolingo Style Components */
         .duo-card { background: #FFFFFF; border: 2px solid #E5E5E5; border-bottom: 5px solid #E5E5E5; border-radius: 1.25rem; }
         .duo-btn-green { background: #58CC02; border-bottom: 5px solid #46A302; color: white; transition: all 0.1s; }
         .duo-btn-green:active { border-bottom-width: 0; transform: translateY(5px); }
         .duo-btn-blue { background: #1CB0F6; border-bottom: 5px solid #1899D6; color: white; transition: all 0.1s; }
         .duo-btn-blue:active { border-bottom-width: 0; transform: translateY(5px); }
         .duo-btn-gray { background: #FFFFFF; border: 2px solid #E5E5E5; border-bottom: 4px solid #E5E5E5; color: #AFAFAF; }
+        
         .duo-input { border: 2px solid #E5E5E5; border-bottom: 4px solid #E5E5E5; border-radius: 1rem; padding: 1rem; width: 100%; font-weight: 800; outline: none; transition: border-color 0.2s; }
         .duo-input:focus { border-color: #1CB0F6; }
+        
         .no-scrollbar::-webkit-scrollbar { display: none; }
         @keyframes pop { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         .fade-in { animation: pop 0.2s ease-out forwards; }
@@ -262,14 +268,12 @@
 
                 init() {
                     this.requestNotification();
-                    
                     const saved = localStorage.getItem('duo_hub_final');
                     if (saved) {
                         const data = JSON.parse(saved);
                         this.wallet = data.wallet || this.wallet;
                         this.pomo = {...this.pomo, ...data.pomo};
                         this.notes = data.notes || [];
-                        // Pastikan timer tidak berjalan otomatis saat load
                         this.pomo.isRunning = false;
                         this.pomo.timer = null;
                     }
@@ -285,7 +289,6 @@
                     }
                 },
 
-                // FUNGSI BARU: Kirim Notifikasi
                 sendNotification(title, body) {
                     if ("Notification" in window && Notification.permission === "granted") {
                         new Notification(title, {
@@ -319,11 +322,11 @@
                     if(audio) { audio.currentTime = 0; audio.play().catch(e => console.log('Audio error')); }
                 },
 
-               getGreeting() {
+                getGreeting() {
                     const hrs = new Date().getHours();
                     if (hrs >= 5 && hrs < 11) return "Pagi, Ridho!";
                     if (hrs >= 11 && hrs < 15) return "Siang, Ridho!";
-                    if (hrs >= 15 && hrs < 18) return "Sore, Ridho!"; // Sebelumnya tertulis Pagi
+                    if (hrs >= 15 && hrs < 18) return "Sore, Ridho!";
                     return "Malam, Ridho!";
                 },
 
@@ -348,6 +351,7 @@
                     this.playSound('ding');
                     this.showFinanceModal = false;
                     this.tempTrx = { type: 'expense', amount: '', note: '' };
+                    this.saveData();
                 },
 
                 deleteTransaction(id) {
@@ -355,18 +359,16 @@
                     if (index > -1) {
                         const trx = this.wallet.transactions[index];
                         if(trx.type === 'income') this.wallet.balance -= trx.amount;
-                        else { 
-                            this.wallet.balance += trx.amount; 
-                            this.wallet.totalExpense -= trx.amount;
-                        }
+                        else { this.wallet.balance += trx.amount; this.wallet.totalExpense -= trx.amount; }
                         this.wallet.transactions.splice(index, 1);
                         this.playSound('click');
+                        this.saveData();
                     }
                 },
 
                 getCircleOffset() {
                     const total = this.pomo.mode === 'focus' ? this.pomo.focusTime : this.pomo.breakTime;
-                    if (!total || total === 0) return 0;
+                    if (!total || total === 0) return 691;
                     return 691 - (691 * this.pomo.timeLeft) / total;
                 },
 
@@ -403,15 +405,9 @@
                     }
                 },
 
-                // GANTI SESI MANUAL
                 switchMode() {
-                    if(this.pomo.mode === 'focus') {
-                        this.pomo.mode = 'break';
-                        this.pomo.timeLeft = this.pomo.breakTime;
-                    } else {
-                        this.pomo.mode = 'focus';
-                        this.pomo.timeLeft = this.pomo.focusTime;
-                    }
+                    this.pomo.mode = (this.pomo.mode === 'focus') ? 'break' : 'focus';
+                    this.pomo.timeLeft = (this.pomo.mode === 'focus') ? this.pomo.focusTime : this.pomo.breakTime;
                     if (this.pomo.isRunning) {
                         clearInterval(this.pomo.timer);
                         this.pomo.isRunning = false;
@@ -432,7 +428,6 @@
                     this.saveData();
                 },
 
-                // HAPUS TASK
                 deleteTask(id) {
                     this.pomo.tasks = this.pomo.tasks.filter(t => t.id !== id);
                     this.saveData();

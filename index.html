@@ -102,11 +102,15 @@
             </div>
 
             <div x-show="activeTab === 'pomo'" x-cloak class="fade-in text-center">
-                <div class="mb-4">
+                <div class="mb-4 flex flex-col items-center gap-2">
                     <span class="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border-2" 
                           :class="pomo.mode === 'focus' ? 'bg-green-50 border-green-200 text-green-500' : 'bg-blue-50 border-blue-200 text-blue-500'"
                           x-text="pomo.mode === 'focus' ? 'Sesi Fokus' : 'Sesi Istirahat'"></span>
+                    <button @click="switchMode(); playSound('click')" class="text-[10px] font-black text-blue-400 uppercase tracking-tighter flex items-center gap-1">
+                        <i data-lucide="refresh-cw" class="w-3 h-3"></i> Ganti Sesi
+                    </button>
                 </div>
+
                 <div class="mt-4 mb-10 flex flex-col items-center">
                     <div class="relative flex items-center justify-center">
                         <svg class="w-64 h-64 transform -rotate-90">
@@ -120,9 +124,10 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="flex flex-col gap-3">
                     <button @click="toggleTimer(); playSound('click')" :class="pomo.mode === 'focus' ? 'duo-btn-green' : 'duo-btn-blue'" class="w-full py-4 rounded-2xl font-black text-lg" x-text="pomo.isRunning ? 'PAUSE' : 'MULAI'"></button>
-                    <button @click="resetTimer(); playSound('click')" class="text-gray-400 font-black text-[10px] uppercase tracking-widest">Reset Sesi</button>
+                    <button @click="resetTimer(); playSound('click')" class="text-gray-400 font-black text-[10px] uppercase tracking-widest">Reset Waktu</button>
                 </div>
 
                 <div class="mt-10 text-left">
@@ -132,11 +137,16 @@
                     </div>
                     <div class="space-y-3">
                         <template x-for="task in pomo.tasks" :key="task.id">
-                            <div @click="task.done = !task.done; if(task.done) playSound('ding')" class="duo-card p-4 flex items-center gap-4 cursor-pointer" :class="task.done ? 'bg-gray-50 opacity-60' : ''">
-                                <div class="w-6 h-6 rounded border-2 flex items-center justify-center" :class="task.done ? 'bg-green-500 border-green-500' : 'border-gray-200'">
-                                    <i data-lucide="check" class="w-4 h-4 text-white stroke-[4]" x-show="task.done"></i>
+                            <div class="duo-card p-4 flex items-center justify-between" :class="task.done ? 'bg-gray-50 opacity-60' : ''">
+                                <div @click="task.done = !task.done; if(task.done) playSound('ding')" class="flex items-center gap-4 cursor-pointer flex-1">
+                                    <div class="w-6 h-6 rounded border-2 flex items-center justify-center shrink-0" :class="task.done ? 'bg-green-500 border-green-500' : 'border-gray-200'">
+                                        <i data-lucide="check" class="w-4 h-4 text-white stroke-[4]" x-show="task.done"></i>
+                                    </div>
+                                    <span class="font-bold text-gray-700" :class="task.done ? 'line-through' : ''" x-text="task.title"></span>
                                 </div>
-                                <span class="font-bold text-gray-700" :class="task.done ? 'line-through' : ''" x-text="task.title"></span>
+                                <button @click="deleteTask(task.id); playSound('click')" class="ml-2 text-gray-300 hover:text-red-500 transition-colors">
+                                    <i data-lucide="x" class="w-5 h-5"></i>
+                                </button>
                             </div>
                         </template>
                     </div>
@@ -222,6 +232,7 @@
                 <button @click="addTask()" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg">TAMBAH</button>
             </div>
         </div>
+
         <div x-show="showNoteModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
             <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showNoteModal = false"></div>
             <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200">
@@ -256,15 +267,30 @@
                         this.wallet = data.wallet || this.wallet;
                         this.pomo = {...this.pomo, ...data.pomo};
                         this.notes = data.notes || [];
+                        // Pastikan timer tidak berjalan otomatis saat load
+                        this.pomo.isRunning = false;
+                        this.pomo.timer = null;
                     }
                     this.$nextTick(() => lucide.createIcons());
                     this.$watch('wallet', () => this.saveData());
-                    this.$watch('pomo', () => this.saveData());
+                    this.$watch('pomo.tasks', () => this.saveData());
                     this.$watch('notes', () => this.saveData());
                 },
 
                 saveData() {
-                    const data = { wallet: this.wallet, pomo: this.pomo, notes: this.notes };
+                    const data = { 
+                        wallet: this.wallet, 
+                        pomo: { 
+                            tasks: this.pomo.tasks, 
+                            customFocus: this.pomo.customFocus, 
+                            customBreak: this.pomo.customBreak,
+                            focusTime: this.pomo.focusTime,
+                            breakTime: this.pomo.breakTime,
+                            timeLeft: this.pomo.timeLeft,
+                            mode: this.pomo.mode
+                        }, 
+                        notes: this.notes 
+                    };
                     localStorage.setItem('duo_hub_final', JSON.stringify(data));
                     this.$nextTick(() => lucide.createIcons());
                 },
@@ -308,7 +334,6 @@
                     const index = this.wallet.transactions.findIndex(t => t.id === id);
                     if (index > -1) {
                         const trx = this.wallet.transactions[index];
-                        // Kembalikan efek saldo saat dihapus
                         if(trx.type === 'income') this.wallet.balance -= trx.amount;
                         else { 
                             this.wallet.balance += trx.amount; 
@@ -350,29 +375,45 @@
                                 clearInterval(this.pomo.timer);
                                 this.pomo.isRunning = false;
                                 this.playSound('ding');
-                                if(this.pomo.mode === 'focus') {
-                                    this.pomo.mode = 'break';
-                                    this.pomo.timeLeft = this.pomo.breakTime;
-                                } else {
-                                    this.pomo.mode = 'focus';
-                                    this.pomo.timeLeft = this.pomo.focusTime;
-                                }
+                                this.switchMode();
                             }
                         }, 1000);
                     }
                 },
 
+                // GANTI SESI MANUAL
+                switchMode() {
+                    if(this.pomo.mode === 'focus') {
+                        this.pomo.mode = 'break';
+                        this.pomo.timeLeft = this.pomo.breakTime;
+                    } else {
+                        this.pomo.mode = 'focus';
+                        this.pomo.timeLeft = this.pomo.focusTime;
+                    }
+                    if (this.pomo.isRunning) {
+                        clearInterval(this.pomo.timer);
+                        this.pomo.isRunning = false;
+                    }
+                    this.saveData();
+                },
+
                 resetTimer() {
                     clearInterval(this.pomo.timer);
                     this.pomo.isRunning = false;
-                    this.pomo.mode = 'focus';
-                    this.pomo.timeLeft = this.pomo.focusTime;
+                    this.pomo.timeLeft = this.pomo.mode === 'focus' ? this.pomo.focusTime : this.pomo.breakTime;
                 },
 
                 addTask() {
                     if(!this.tempTask) return;
                     this.pomo.tasks.push({ id: Date.now(), title: this.tempTask, done: false });
                     this.tempTask = ''; this.showTaskModal = false; this.playSound('click');
+                    this.saveData();
+                },
+
+                // HAPUS TASK
+                deleteTask(id) {
+                    this.pomo.tasks = this.pomo.tasks.filter(t => t.id !== id);
+                    this.saveData();
                 },
 
                 addNote() {
@@ -380,11 +421,13 @@
                     this.notes.unshift({ id: Date.now(), ...this.tempNote });
                     this.tempNote = { title: '', content: '' };
                     this.showNoteModal = false; this.playSound('click');
+                    this.saveData();
                 },
 
                 deleteNote(id) { 
                     this.notes = this.notes.filter(n => n.id !== id); 
                     this.playSound('click'); 
+                    this.saveData();
                 }
             }
         }

@@ -3,191 +3,367 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Expensify Fixed — Indigo Pro</title>
+    <title>Personal Hub — Duo Style</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #03040b; -webkit-tap-highlight-color: transparent; overflow-x: hidden; }
+        body { 
+            font-family: 'Nunito', sans-serif; 
+            background-color: #FFFFFF;
+            color: #4B4B4B;
+        }
         [x-cloak] { display: none !important; }
-        .glass { background: rgba(30, 30, 46, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(99, 102, 241, 0.1); }
-        .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        /* DUOLINGO 3D UI KIT */
+        .duo-card {
+            background: #FFFFFF;
+            border: 2px solid #E5E5E5;
+            border-bottom: 5px solid #E5E5E5;
+            border-radius: 1.25rem;
+        }
+
+        .duo-btn-green {
+            background: #58CC02;
+            border-bottom: 5px solid #46A302;
+            color: white;
+            transition: all 0.1s;
+        }
+        .duo-btn-green:active {
+            border-bottom-width: 0;
+            transform: translateY(5px);
+        }
+
+	.no-scrollbar::webkit-scrollbar{
+	    display: none;
+	}
+
+        .duo-btn-blue {
+            background: #1CB0F6;
+            border-bottom: 5px solid #1899D6;
+            color: white;
+            transition: all 0.1s;
+        }
+        .duo-btn-blue:active {
+            border-bottom-width: 0;
+            transform: translateY(5px);
+        }
+
+        .duo-btn-gray {
+            background: #FFFFFF;
+            border: 2px solid #E5E5E5;
+            border-bottom: 4px solid #E5E5E5;
+            color: #AFAFAF;
+        }
+
+        .duo-input {
+            border: 2px solid #E5E5E5;
+            border-bottom: 4px solid #E5E5E5;
+            border-radius: 1rem;
+            padding: 1rem;
+            width: 100%;
+            font-weight: 800;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .duo-input:focus { border-color: #1CB0F6; }
+        
+        @keyframes pop {
+            0% { transform: scale(0.95); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .fade-in { animation: pop 0.2s ease-out forwards; }
     </style>
 </head>
-<body class="text-zinc-200" x-data="expenseApp()">
+<body x-data="superApp()" class="no-scrollbar">
 
-    <header class="p-6 pb-2 sticky top-0 bg-[#03040b]/95 backdrop-blur-md z-40">
-        <div class="flex justify-between items-start mb-6">
-            <div>
-                <p class="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mb-1 text-left">Total Pengeluaran</p>
-                <h1 class="text-3xl font-bold text-white tracking-tighter" x-text="formatIDR(todayTotal)"></h1>
+    <div class="max-w-[430px] mx-auto min-h-screen relative bg-white md:border-x-2 md:border-gray-100 overflow-hidden">
+        
+        <header class="px-6 pt-6 pb-4 flex justify-between items-center border-b-2 border-gray-100 sticky top-0 bg-white z-40">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-orange-400 rounded-xl flex items-center justify-center border-b-4 border-orange-600">
+                    <i data-lucide="flame" class="text-white w-6 h-6 fill-current"></i>
+                </div>
+                <div>
+                    <h2 class="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Status</h2>
+                    <p class="text-lg font-black text-gray-700" x-text="getGreeting()"></p>
+                </div>
             </div>
-            <button @click="showSettings = true" class="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400">
-                <i data-lucide="settings-2" class="w-5 h-5"></i>
+            <button @click="showLimitModal = true" class="w-10 h-10 rounded-xl flex items-center justify-center border-2 border-gray-100 hover:bg-gray-50">
+                <i data-lucide="settings" class="w-5 h-5 text-gray-400"></i>
             </button>
-        </div>
+        </header>
 
-        <div class="glass rounded-2xl p-4 mb-4" @click="showSettings = true">
-            <div class="flex justify-between text-[10px] font-bold mb-2">
-                <span class="text-zinc-500 uppercase text-left">Limit: <span class="text-zinc-300" x-text="formatIDR(dailyLimit)"></span></span>
-                <span :class="progress >= 100 ? 'text-red-400' : 'text-indigo-400'" x-text="progress + '%'"></span>
-            </div>
-            <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
-                <div class="h-full transition-all duration-1000 ease-out" 
-                     :class="progress >= 100 ? 'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]' : 'bg-indigo-500'" 
-                     :style="`width: ${progress}%` "></div>
-            </div>
-        </div>
-    </header>
-
-    <main class="px-6 pb-32">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Riwayat Hari Ini</h2>
-            <button @click="confirmReset()" class="text-[10px] text-zinc-700 font-bold hover:text-red-500">RESET</button>
-        </div>
-
-        <div class="space-y-3">
-            <template x-for="item in transactions" :key="item.id">
-                <div class="p-4 glass rounded-2xl flex items-center justify-between group">
-                    <div class="flex items-center gap-4 text-left">
-                        <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-400">
-                            <i :data-lucide="getIcon(item.category)" class="w-5 h-5"></i>
-                        </div>
-                        <div>
-                            <p class="text-xs font-bold text-zinc-100" x-text="item.note"></p>
-                            <p class="text-[9px] text-zinc-500 font-medium uppercase" x-text="item.category + ' • ' + item.time"></p>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <p class="text-sm font-bold text-white" x-text="'- ' + formatIDR(item.amount)"></p>
-                        <button @click="deleteItem(item.id)" class="text-[10px] text-red-500/50 hover:text-red-500 font-bold">Hapus</button>
-                    </div>
-                </div>
-            </template>
-
-            <template x-if="transactions.length === 0">
-                <div class="py-20 text-center opacity-20">
-                    <i data-lucide="ghost" class="w-12 h-12 mx-auto mb-4"></i>
-                    <p class="text-xs italic">Belum ada pengeluaran.</p>
-                </div>
-            </template>
-        </div>
-    </main>
-
-    <nav class="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#03040b] via-[#03040b] to-transparent z-50">
-        <button @click="showAddModal = true" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-xs shadow-2xl shadow-indigo-600/40 active:scale-95 transition flex items-center justify-center gap-3">
-            <i data-lucide="plus-circle" class="w-5 h-5"></i> CATAT TRANSAKSI
-        </button>
-    </nav>
-
-    <div x-show="showAddModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showAddModal = false"></div>
-        <div class="relative bg-zinc-900 w-full rounded-t-[2.5rem] p-8 animate-slide-up border-t border-indigo-500/20 shadow-2xl">
-            <div class="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-8"></div>
+        <main class="px-6 pb-32 pt-6">
             
-            <div class="mb-8 text-center">
-                <p class="text-[10px] font-bold text-zinc-500 uppercase mb-2">Jumlah Nominal</p>
-                <input type="number" x-model.number="newItem.amount" 
-                       class="w-full bg-transparent text-center text-4xl font-bold text-white outline-none" placeholder="0">
+            <div x-show="activeTab === 'finance'" x-cloak class="fade-in">
+                <div @click="showLimitModal = true" class="duo-card p-6 mb-8 border-blue-200 bg-blue-50/30 cursor-pointer hover:bg-blue-50 transition-colors">
+                    <div class="flex justify-between items-start mb-1">
+                        <p class="text-[11px] font-black text-blue-400 uppercase tracking-widest">Saldo Tersedia</p>
+                        <i data-lucide="pencil" class="w-3 h-3 text-blue-300"></i>
+                    </div>
+                    <h3 class="text-3xl font-black text-gray-800 mb-6" x-text="formatIDR(wallet.balance)"></h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-end">
+                            <span class="text-xs font-black text-gray-400 uppercase">Limit Harian</span>
+                            <span class="text-xs font-black text-gray-600" x-text="financeProgress + '%'"></span>
+                        </div>
+                        <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
+                            <div class="h-full bg-green-500 rounded-full transition-all duration-500 border-b-4 border-green-600" :style="`width: ${financeProgress}%`"></div>
+                        </div>
+                        <p class="text-[10px] text-center font-black text-gray-400 uppercase tracking-tighter" x-text="'Sisa Limit: ' + formatIDR(wallet.dailyLimit - wallet.totalExpense)"></p>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center mb-5">
+                    <h4 class="font-black text-xl text-gray-700">Riwayat</h4>
+                    <button @click="showFinanceModal = true" class="duo-btn-blue w-10 h-10 rounded-xl flex items-center justify-center">
+                        <i data-lucide="plus" class="w-6 h-6 stroke-[3]"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <template x-for="trx in wallet.transactions" :key="trx.id">
+                        <div class="duo-card p-4 flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div :class="trx.type === 'income' ? 'bg-yellow-400 border-yellow-600' : 'bg-blue-400 border-blue-600'" 
+                                     class="w-11 h-11 rounded-xl border-b-4 flex items-center justify-center text-white">
+                                    <i :data-lucide="trx.type === 'income' ? 'arrow-down-left' : 'arrow-up-right'" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-black text-gray-700" x-text="trx.note"></p>
+                                    <p class="text-[10px] text-gray-400 font-bold uppercase" x-text="trx.time"></p>
+                                </div>
+                            </div>
+                            <p class="font-black" :class="trx.type === 'income' ? 'text-green-500' : 'text-gray-700'" 
+                               x-text="(trx.type === 'income' ? '+' : '-') + formatIDR(trx.amount).replace('Rp', '')"></p>
+                        </div>
+                    </template>
+                </div>
             </div>
 
-            <div class="space-y-4 text-left">
-                <div>
-                    <label class="text-[10px] font-bold text-zinc-500 uppercase ml-1">Nama Barang</label>
-                    <input type="text" x-model="newItem.note" placeholder="Beli apa?" 
-                           class="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-xs mt-2 outline-none focus:border-indigo-500 text-white">
+            <div x-show="activeTab === 'pomo'" x-cloak class="fade-in text-center">
+                <div class="mt-4 mb-10 flex flex-col items-center">
+                    <div class="relative flex items-center justify-center">
+                        <svg class="w-64 h-64 transform -rotate-90">
+                            <circle cx="128" cy="128" r="110" stroke="#E5E5E5" stroke-width="12" fill="transparent" />
+                            <circle cx="128" cy="128" r="110" stroke="#58CC02" stroke-width="12" fill="transparent" 
+                                    stroke-dasharray="691" :stroke-dashoffset="691 - (691 * (pomo.timeLeft / 1500))"
+                                    stroke-linecap="round" class="transition-all duration-1000 ease-linear" />
+                        </svg>
+                        <div class="absolute">
+                            <span class="text-6xl font-black text-gray-700 tracking-tighter tabular-nums" x-text="formatTime()"></span>
+                            <p class="text-[11px] font-black text-gray-400 uppercase tracking-widest mt-2">Fokus</p>
+                        </div>
+                    </div>
                 </div>
-                <div>
-                    <label class="text-[10px] font-bold text-zinc-500 uppercase ml-1 text-left">Kategori</label>
-                    <select x-model="newItem.category" class="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-xs mt-2 outline-none text-white appearance-none">
-                        <option>Makan & Minum</option>
-                        <option>Transportasi</option>
-                        <option>Hiburan</option>
-                        <option>Lain-lain</option>
-                    </select>
+                <button @click="toggleTimer()" class="w-full duo-btn-green py-4 rounded-2xl font-black text-lg mb-4" x-text="pomo.isRunning ? 'PAUSE' : 'MULAI'"></button>
+                <div class="flex justify-between items-center mb-4 text-left">
+                    <h4 class="font-black text-gray-700 text-xl">Target</h4>
+                    <button @click="showTaskModal = true" class="text-blue-500 font-black text-xs uppercase tracking-widest">Tambah</button>
                 </div>
-                <button @click="addItem()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-xs mt-4 active:scale-95 transition">SIMPAN TRANSAKSI</button>
+                <div class="space-y-3 text-left">
+                    <template x-for="task in pomo.tasks" :key="task.id">
+                        <div @click="task.done = !task.done" class="duo-card p-4 flex items-center gap-4 cursor-pointer" :class="task.done ? 'bg-gray-50 opacity-60' : ''">
+                            <div class="w-6 h-6 rounded border-2 flex items-center justify-center" :class="task.done ? 'bg-green-500 border-green-500' : 'border-gray-200'">
+                                <i data-lucide="check" class="w-4 h-4 text-white stroke-[4]" x-show="task.done"></i>
+                            </div>
+                            <span class="font-bold text-gray-700" :class="task.done ? 'line-through' : ''" x-text="task.title"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div x-show="activeTab === 'notes'" x-cloak class="fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h4 class="font-black text-gray-700 text-2xl">Catatan</h4>
+                    <button @click="showNoteModal = true" class="duo-btn-blue p-3 rounded-xl"><i data-lucide="edit-3" class="w-5 h-5 stroke-[3]"></i></button>
+                </div>
+                <div class="grid grid-cols-1 gap-4">
+                    <template x-for="note in notes" :key="note.id">
+                        <div class="duo-card p-5 bg-white">
+                            <h5 class="text-lg font-black text-gray-700 mb-1" x-text="note.title"></h5>
+                            <p class="text-sm font-bold text-gray-500" x-text="note.content"></p>
+                            <button @click="deleteNote(note.id)" class="mt-4 text-red-400 font-black text-xs uppercase">Hapus</button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+        </main>
+
+        <nav class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-100 p-3 z-50 md:absolute">
+            <div class="max-w-[360px] mx-auto flex justify-around items-center">
+                <button @click="activeTab = 'finance'" class="flex flex-col items-center gap-1" :class="activeTab === 'finance' ? 'text-blue-500 scale-110' : 'text-gray-300'">
+                    <i data-lucide="home" class="w-8 h-8 stroke-[2.5]" :class="activeTab === 'finance' && 'fill-current'"></i>
+                    <span class="text-[10px] font-black uppercase tracking-tighter">Dompet</span>
+                </button>
+                <button @click="activeTab = 'pomo'" class="flex flex-col items-center gap-1" :class="activeTab === 'pomo' ? 'text-green-500 scale-110' : 'text-gray-300'">
+                    <i data-lucide="target" class="w-8 h-8 stroke-[2.5]" :class="activeTab === 'pomo' && 'fill-current'"></i>
+                    <span class="text-[10px] font-black uppercase tracking-tighter">Fokus</span>
+                </button>
+                <button @click="activeTab = 'notes'" class="flex flex-col items-center gap-1" :class="activeTab === 'notes' ? 'text-blue-400 scale-110' : 'text-gray-300'">
+                    <i data-lucide="book-open" class="w-8 h-8 stroke-[2.5]" :class="activeTab === 'notes' && 'fill-current'"></i>
+                    <span class="text-[10px] font-black uppercase tracking-tighter">Catatan</span>
+                </button>
+            </div>
+        </nav>
+
+        <div x-show="showLimitModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showLimitModal = false"></div>
+            <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200 fade-in">
+                <div class="w-12 h-1.5 bg-gray-200 mx-auto mb-8 rounded-full"></div>
+                <h3 class="text-center font-black text-gray-700 mb-8 uppercase text-lg tracking-widest">Pengaturan Saldo</h3>
+                
+                <div class="space-y-6 mb-10">
+                    <div>
+                        <label class="text-[10px] text-gray-400 font-black uppercase ml-1 tracking-widest">Update Saldo Total</label>
+                        <input type="number" x-model.number="wallet.balance" class="duo-input mt-2 text-blue-500">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-400 font-black uppercase ml-1 tracking-widest">Budget Harian (Limit)</label>
+                        <input type="number" x-model.number="wallet.dailyLimit" class="duo-input mt-2 text-green-500">
+                    </div>
+                </div>
+                
+                <button @click="showLimitModal = false" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg uppercase">SELESAI</button>
             </div>
         </div>
-    </div>
 
-    <div x-show="showSettings" x-cloak class="fixed inset-0 z-[70] flex items-end">
-        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" @click="showSettings = false"></div>
-        <div class="relative bg-zinc-900 w-full rounded-t-[2.5rem] p-8 animate-slide-up">
-            <div class="w-12 h-1.5 bg-zinc-800 rounded-full mx-auto mb-8"></div>
-            <h3 class="text-lg font-bold text-white mb-8 text-center">Atur Limit Harian</h3>
-            <input type="number" x-model.number="dailyLimit" class="w-full bg-transparent text-center text-5xl font-bold text-indigo-400 outline-none mb-10">
-            <button @click="showSettings = false" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold text-sm">Update Limit</button>
+        <div x-show="showFinanceModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showFinanceModal = false"></div>
+            <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200">
+                <div class="w-12 h-1.5 bg-gray-200 mx-auto mb-8 rounded-full"></div>
+                <div class="flex gap-4 mb-8">
+                    <button @click="tempTrx.type = 'expense'" :class="tempTrx.type === 'expense' ? 'duo-btn-blue' : 'duo-btn-gray'" class="flex-1 py-3 rounded-2xl font-black text-xs uppercase tracking-widest">Pengeluaran</button>
+                    <button @click="tempTrx.type = 'income'" :class="tempTrx.type === 'income' ? 'duo-btn-green' : 'duo-btn-gray'" class="flex-1 py-3 rounded-2xl font-black text-xs uppercase tracking-widest">Pemasukan</button>
+                </div>
+                <input type="number" x-model="tempTrx.amount" placeholder="0" class="w-full bg-transparent text-center text-5xl font-black text-gray-700 outline-none mb-8">
+                <input type="text" x-model="tempTrx.note" placeholder="Untuk apa?" class="duo-input text-center mb-8">
+                <button @click="addTransaction()" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg uppercase tracking-widest">Simpan</button>
+            </div>
         </div>
+
+        <div x-show="showNoteModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showNoteModal = false"></div>
+            <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200">
+                <input type="text" x-model="tempNote.title" placeholder="Judul" class="duo-input mb-4">
+                <textarea x-model="tempNote.content" rows="4" placeholder="Isi catatan..." class="duo-input mb-6"></textarea>
+                <button @click="addNote()" class="w-full duo-btn-blue py-5 rounded-2xl font-black uppercase">Simpan Catatan</button>
+            </div>
+        </div>
+
+        <div x-show="showTaskModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showTaskModal = false"></div>
+            <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200">
+                <input type="text" x-model="tempTask" placeholder="Target baru..." class="duo-input text-center mb-6">
+                <button @click="addTask()" class="w-full duo-btn-green py-5 rounded-2xl font-black uppercase">Tambah</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        function expenseApp() {
+        function superApp() {
             return {
-                showAddModal: false,
-                showSettings: false,
-                dailyLimit: 200000,
-                transactions: [],
-                newItem: { amount: null, category: 'Makan & Minum', note: '' },
+                activeTab: 'finance',
+                showFinanceModal: false,
+                showLimitModal: false,
+                showTaskModal: false,
+                showNoteModal: false,
+                
+                wallet: { balance: 2500000, dailyLimit: 200000, transactions: [], totalExpense: 0 },
+                tempTrx: { type: 'expense', amount: '', note: '' },
+                pomo: { timeLeft: 1500, isRunning: false, timer: null, tasks: [] },
+                tempTask: '',
+                notes: [],
+                tempNote: { title: '', content: '' },
 
                 init() {
-                    const savedTrx = localStorage.getItem('exp_data_indigo');
-                    const savedLim = localStorage.getItem('exp_limit_indigo');
-                    if (savedTrx) this.transactions = JSON.parse(savedTrx);
-                    if (savedLim) this.dailyLimit = Number(savedLim);
-                    
-                    this.$nextTick(() => lucide.createIcons());
-                    
-                    this.$watch('transactions', v => {
-                        localStorage.setItem('exp_data_indigo', JSON.stringify(v));
-                        this.$nextTick(() => lucide.createIcons());
-                    });
-                    this.$watch('dailyLimit', v => localStorage.setItem('exp_limit_indigo', v));
-                },
-
-                get todayTotal() {
-                    return this.transactions.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
-                },
-
-                get progress() {
-                    if (!this.dailyLimit) return 0;
-                    return Math.min(Math.round((this.todayTotal / this.dailyLimit) * 100), 100);
-                },
-
-                addItem() {
-                    if (!this.newItem.amount || !this.newItem.note) {
-                        alert("Harap isi nominal dan catatan!");
-                        return;
+                    const saved = localStorage.getItem('duo_hub_data');
+                    if (saved) {
+                        const data = JSON.parse(saved);
+                        this.wallet = data.wallet || this.wallet;
+                        this.pomo.tasks = data.pomoTasks || [];
+                        this.notes = data.notes || [];
                     }
+                    this.$nextTick(() => lucide.createIcons());
+                    this.$watch('wallet', v => this.saveData());
+                    this.$watch('pomo.tasks', v => this.saveData());
+                    this.$watch('notes', v => this.saveData());
+                },
 
-                    const record = {
-                        id: Date.now(),
-                        amount: this.newItem.amount,
-                        category: this.newItem.category,
-                        note: this.newItem.note,
+                saveData() {
+                    const data = { wallet: this.wallet, pomoTasks: this.pomo.tasks, notes: this.notes };
+                    localStorage.setItem('duo_hub_data', JSON.stringify(data));
+                    this.$nextTick(() => lucide.createIcons());
+                },
+
+                getGreeting() {
+                    const hrs = new Date().getHours();
+                    if (hrs < 12) return "Pagi, Ridho!";
+                    if (hrs < 18) return "Siang, Ridho!";
+                    return "Malam, Ridho!";
+                },
+
+                get financeProgress() {
+                    if (this.wallet.dailyLimit <= 0) return 0;
+                    return Math.min(Math.round((this.wallet.totalExpense / this.wallet.dailyLimit) * 100), 100) || 0;
+                },
+
+                addTransaction() {
+                    if(!this.tempTrx.amount || !this.tempTrx.note) return;
+                    const amount = Number(this.tempTrx.amount);
+                    if(this.tempTrx.type === 'income') {
+                        this.wallet.balance += amount;
+                    } else {
+                        this.wallet.balance -= amount;
+                        this.wallet.totalExpense += amount;
+                    }
+                    this.wallet.transactions.unshift({
+                        id: Date.now(), ...this.tempTrx, amount: amount,
                         time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                    };
-
-                    this.transactions = [record, ...this.transactions];
-                    this.showAddModal = false;
-                    this.newItem = { amount: null, category: 'Makan & Minum', note: '' };
+                    });
+                    this.showFinanceModal = false;
+                    this.tempTrx = { type: 'expense', amount: '', note: '' };
                 },
 
-                deleteItem(id) {
-                    this.transactions = this.transactions.filter(t => t.id !== id);
+                formatTime() {
+                    const m = Math.floor(this.pomo.timeLeft / 60);
+                    const s = this.pomo.timeLeft % 60;
+                    return `${m}:${s.toString().padStart(2, '0')}`;
                 },
-
-                confirmReset() {
-                    if (confirm('Hapus semua data?')) this.transactions = [];
+                toggleTimer() {
+                    if (this.pomo.isRunning) {
+                        clearInterval(this.pomo.timer);
+                        this.pomo.isRunning = false;
+                    } else {
+                        this.pomo.isRunning = true;
+                        this.pomo.timer = setInterval(() => {
+                            if (this.pomo.timeLeft > 0) this.pomo.timeLeft--;
+                            else { clearInterval(this.pomo.timer); alert('Hebat! Sesi Selesai!'); }
+                        }, 1000);
+                    }
                 },
-
-                getIcon(cat) {
-                    const map = { 'Makan & Minum': 'coffee', 'Transportasi': 'bus', 'Hiburan': 'gamepad-2' };
-                    return map[cat] || 'box';
+                resetTimer() {
+                    clearInterval(this.pomo.timer);
+                    this.pomo.timeLeft = 1500;
+                    this.pomo.isRunning = false;
                 },
-
+                addTask() {
+                    if(!this.tempTask) return;
+                    this.pomo.tasks.push({ id: Date.now(), title: this.tempTask, done: false });
+                    this.tempTask = ''; this.showTaskModal = false;
+                },
+                addNote() {
+                    if(!this.tempNote.title) return;
+                    this.notes.unshift({ id: Date.now(), ...this.tempNote });
+                    this.tempNote = { title: '', content: '' };
+                    this.showNoteModal = false;
+                },
+                deleteNote(id) { this.notes = this.notes.filter(n => n.id !== id); },
                 formatIDR(num) {
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num || 0);
                 }

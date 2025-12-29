@@ -303,9 +303,11 @@
                 getGreeting() {
                     const hrs = new Date().getHours();
                     if (hrs < 12) return "Pagi, Ridho!";
-                    if (hrs < 18) return "Siang, Ridho!";
+                    if (hrs < 15) return "Siang, Ridho!";
+                    if (hrs < 18) return "Pagi, Ridho!";
                     return "Malam, Ridho!";
                 },
+
 
                 formatIDR(num) {
                     return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(num || 0);

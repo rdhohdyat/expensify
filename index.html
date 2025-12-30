@@ -359,12 +359,30 @@
                         this.savings = data.savings || [];
                         this.pomo.isRunning = false;
                         this.pomo.timer = null;
+
+                        this.checkDailyReset();
                     }
                     this.$nextTick(() => lucide.createIcons());
                     this.$watch('wallet', () => this.saveData());
                     this.$watch('savings', () => this.saveData());
                     this.$watch('pomo.tasks', () => this.saveData());
                     this.$watch('notes', () => this.saveData());
+                },
+
+                checkDailyReset() {
+                    const today = new Date().toDateString();
+                    const lastReset = localStorage.getItem('last_reset_date');
+                    
+                    if (lastReset !== today) {
+                        this.resetDailyLimit();
+                        localStorage.setItem('last_reset_date', today);
+                    }
+                },
+
+                resetDailyLimit() {
+                    this.wallet.totalExpense = 0;
+                    this.saveData();
+                    // Optional: alert('Limit harian telah direset!');
                 },
 
                 requestNotification() {

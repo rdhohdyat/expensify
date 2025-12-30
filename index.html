@@ -257,6 +257,11 @@
                         <label class="text-[10px] font-black text-gray-400 ml-1">Limit Pengeluaran Harian</label>
                         <input type="number" x-model.number="wallet.dailyLimit" class="duo-input">
                     </div>
+
+                    <button @click="if(confirm('Reset pengeluaran hari ini?')){ resetDailyLimit(); showLimitModal = false; playSound('ding'); }" 
+                            class="w-full py-3 border-2 border-red-200 text-red-500 rounded-xl font-black text-[10px] uppercase hover:bg-red-50 transition-colors">
+                        Reset Pengeluaran Hari Ini
+                    </button>
                 </div>
                 <h3 class="font-black text-gray-400 uppercase text-[10px] tracking-widest mb-4">Durasi Pomodoro (Menit)</h3>
                 <div class="grid grid-cols-2 gap-4 mb-10">

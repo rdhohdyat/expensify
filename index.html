@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Duo Hub: Finance + Productivity</title>
+    <title>Duo Hub: Finance + Tasks</title>
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -29,9 +29,6 @@
         
         .duo-btn-orange { background: #FF9600; border-bottom: 5px solid #E68700; color: white; transition: all 0.1s; }
         .duo-btn-orange:active { border-bottom-width: 0; transform: translateY(5px); }
-
-        .duo-btn-purple { background: #CE82FF; border-bottom: 5px solid #A568CC; color: white; transition: all 0.1s; }
-        .duo-btn-purple:active { border-bottom-width: 0; transform: translateY(5px); }
         
         .duo-btn-gray { background: #FFFFFF; border: 2px solid #E5E5E5; border-bottom: 4px solid #E5E5E5; color: #AFAFAF; }
         
@@ -41,10 +38,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         @keyframes pop { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         .fade-in { animation: pop 0.2s ease-out forwards; }
-        
-        /* Shake animation for alarm */
-        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
-        .shake-active { animation: shake 0.5s; animation-iteration-count: infinite; }
     </style>
 </head>
 <body x-data="superApp()" class="no-scrollbar">
@@ -217,59 +210,56 @@
                 </div>
             </div>
 
-            <div x-show="activeTab === 'reminders'" x-cloak class="fade-in">
-                <div class="flex justify-between items-center mb-6">
-                    <h4 class="font-black text-gray-700 text-2xl">Jadwal</h4>
-                    <button @click="showReminderModal = true" class="duo-btn-purple p-3 rounded-xl">
-                        <i data-lucide="bell-plus" class="w-5 h-5 stroke-[3]"></i>
-                    </button>
-                </div>
-                
-                <div class="space-y-4">
-                    <template x-for="rem in reminders" :key="rem.id">
-                        <div class="duo-card p-5 border-purple-200 bg-purple-50/20">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h5 class="text-lg font-black text-gray-700" x-text="rem.title"></h5>
-                                    <div class="flex items-center gap-2 mt-1">
-                                        <i data-lucide="clock" class="w-3 h-3 text-purple-400"></i>
-                                        <p class="text-sm font-bold text-gray-500" x-text="formatDate(rem.time)"></p>
-                                    </div>
-                                </div>
-                                <button @click="deleteReminder(rem.id)" class="text-gray-300 hover:text-red-500">
-                                    <i data-lucide="trash-2" class="w-5 h-5"></i>
-                                </button>
-                            </div>
-                            <div class="mt-3 text-[10px] font-black uppercase tracking-widest text-purple-400" x-text="getTimeRemaining(rem.time)"></div>
-                        </div>
-                    </template>
-                </div>
-                
-                <div x-show="reminders.length === 0" class="text-center py-20">
-                    <i data-lucide="bell-off" class="w-12 h-12 text-gray-200 mx-auto mb-4"></i>
-                    <p class="text-gray-400 font-bold">Tidak ada pengingat aktif</p>
-                </div>
-            </div>
-
             <div x-show="activeTab === 'notes'" x-cloak class="fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h4 class="font-black text-gray-700 text-2xl">Catatan</h4>
                     <button @click="showNoteModal = true" class="duo-btn-blue p-3 rounded-xl"><i data-lucide="edit-3" class="w-5 h-5 stroke-[3]"></i></button>
                 </div>
+                
                 <div class="grid grid-cols-1 gap-4">
                     <template x-for="note in notes" :key="note.id">
                         <div class="duo-card p-5 bg-white relative">
-                            <h5 class="text-lg font-black text-gray-700 mb-1" x-text="note.title"></h5>
-                            <p class="text-sm font-bold text-gray-500" x-text="note.content"></p>
-                            <button @click="deleteNote(note.id)" class="mt-4 text-red-400 font-black text-[10px] uppercase">Hapus</button>
+                            <div class="flex justify-between items-start mb-2">
+                                <h5 class="text-lg font-black text-gray-700" x-text="note.title"></h5>
+                                <div class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider" 
+                                     :class="note.type === 'checklist' ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'"
+                                     x-text="note.type === 'checklist' ? 'LIST' : 'TEKS'"></div>
+                            </div>
+
+                            <template x-if="note.type === 'checklist'">
+                                <div class="space-y-2 mt-2">
+                                    <template x-for="(item, idx) in note.items" :key="idx">
+                                        <div @click="item.done = !item.done; saveData()" class="flex items-start gap-3 cursor-pointer group">
+                                            <div class="w-5 h-5 mt-0.5 rounded border-2 flex items-center justify-center shrink-0 transition-colors"
+                                                 :class="item.done ? 'bg-blue-400 border-blue-400' : 'border-gray-300 bg-white'">
+                                                <i data-lucide="check" class="w-3 h-3 text-white stroke-[4]" x-show="item.done"></i>
+                                            </div>
+                                            <span class="text-sm font-bold leading-tight transition-all"
+                                                  :class="item.done ? 'text-gray-300 line-through decoration-2 decoration-gray-200' : 'text-gray-600'" 
+                                                  x-text="item.text"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <template x-if="!note.type || note.type === 'text'">
+                                <p class="text-sm font-bold text-gray-500 whitespace-pre-wrap" x-text="note.content"></p>
+                            </template>
+
+                            <button @click="deleteNote(note.id)" class="mt-4 w-full py-2 border border-red-100 text-red-400 font-black text-[10px] uppercase rounded-lg hover:bg-red-50">Hapus</button>
                         </div>
                     </template>
+                </div>
+
+                <div x-show="notes.length === 0" class="text-center py-20">
+                    <i data-lucide="clipboard-list" class="w-12 h-12 text-gray-200 mx-auto mb-4"></i>
+                    <p class="text-gray-400 font-bold">Belum ada catatan</p>
                 </div>
             </div>
         </main>
 
         <nav class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-100 p-2 z-50 md:absolute">
-            <div class="max-w-[400px] mx-auto flex justify-between items-center px-2">
+            <div class="max-w-[400px] mx-auto flex justify-around items-center px-2">
                 <button @click="activeTab = 'finance'" class="flex flex-col items-center gap-1 p-2 rounded-xl" :class="activeTab === 'finance' ? 'bg-blue-50 text-blue-500' : 'text-gray-300'">
                     <i data-lucide="wallet" class="w-5 h-5 stroke-[2.5]"></i>
                     <span class="text-[9px] font-black uppercase" x-show="activeTab === 'finance'">Dompet</span>
@@ -281,10 +271,6 @@
                 <button @click="activeTab = 'pomo'" class="flex flex-col items-center gap-1 p-2 rounded-xl" :class="activeTab === 'pomo' ? 'bg-green-50 text-green-500' : 'text-gray-300'">
                     <i data-lucide="target" class="w-5 h-5 stroke-[2.5]"></i>
                     <span class="text-[9px] font-black uppercase" x-show="activeTab === 'pomo'">Fokus</span>
-                </button>
-                <button @click="activeTab = 'reminders'" class="flex flex-col items-center gap-1 p-2 rounded-xl" :class="activeTab === 'reminders' ? 'bg-purple-50 text-purple-500' : 'text-gray-300'">
-                    <i data-lucide="bell" class="w-5 h-5 stroke-[2.5]"></i>
-                    <span class="text-[9px] font-black uppercase" x-show="activeTab === 'reminders'">Jadwal</span>
                 </button>
                 <button @click="activeTab = 'notes'" class="flex flex-col items-center gap-1 p-2 rounded-xl" :class="activeTab === 'notes' ? 'bg-blue-50 text-blue-400' : 'text-gray-300'">
                     <i data-lucide="book-open" class="w-5 h-5 stroke-[2.5]"></i>
@@ -371,36 +357,27 @@
             </div>
         </div>
 
-        <div x-show="showReminderModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
-            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showReminderModal = false"></div>
-            <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200 fade-in">
-                <div class="w-12 h-1.5 bg-gray-200 mx-auto mb-8 rounded-full"></div>
-                <h3 class="font-black text-center text-gray-700 text-xl mb-6">Jadwal Pengingat</h3>
-                <input type="text" x-model="tempReminder.title" placeholder="Ingatkan tentang..." class="duo-input mb-4">
-                <label class="text-[10px] font-black text-gray-400 ml-1">Waktu</label>
-                <input type="datetime-local" x-model="tempReminder.time" class="duo-input mb-8 text-gray-700">
-                <button @click="addReminder()" class="w-full duo-btn-purple py-5 rounded-2xl font-black text-lg">SET PENGINGAT</button>
-            </div>
-        </div>
-
         <div x-show="showNoteModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
             <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showNoteModal = false"></div>
             <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200">
-                <input type="text" x-model="tempNote.title" placeholder="Judul" class="duo-input mb-4">
-                <textarea x-model="tempNote.content" rows="4" placeholder="Isi catatan..." class="duo-input mb-6"></textarea>
-                <button @click="addNote()" class="w-full duo-btn-blue py-5 rounded-2xl font-black text-lg">SIMPAN</button>
-            </div>
-        </div>
-
-        <div x-show="activeAlarm" x-cloak class="fixed inset-0 z-[80] flex items-center justify-center p-6">
-            <div class="absolute inset-0 bg-purple-900/80 backdrop-blur-md"></div>
-            <div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shake-active border-b-8 border-gray-200 shadow-2xl">
-                <div class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <i data-lucide="bell-ring" class="w-10 h-10 text-purple-600"></i>
+                <div class="w-12 h-1.5 bg-gray-200 mx-auto mb-8 rounded-full"></div>
+                
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-black text-gray-700 text-lg">Buat Catatan</h3>
+                    <div class="flex items-center gap-2">
+                        <label class="text-[10px] font-black uppercase text-gray-400">Mode Ceklis (Belanja)</label>
+                        <div @click="tempNote.isChecklist = !tempNote.isChecklist" class="w-10 h-6 rounded-full p-1 cursor-pointer transition-colors" :class="tempNote.isChecklist ? 'bg-green-500' : 'bg-gray-200'">
+                            <div class="w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform" :class="tempNote.isChecklist ? 'translate-x-4' : ''"></div>
+                        </div>
+                    </div>
                 </div>
-                <h2 class="text-2xl font-black text-gray-800 mb-2">PENGINGAT!</h2>
-                <p class="text-lg font-bold text-gray-500 mb-8" x-text="activeAlarm?.title"></p>
-                <button @click="dismissAlarm()" class="w-full duo-btn-purple py-4 rounded-2xl font-black text-lg">OKE, MENGERTI</button>
+
+                <input type="text" x-model="tempNote.title" placeholder="Judul (Misal: Belanja Bulanan)" class="duo-input mb-4">
+                <textarea x-model="tempNote.content" rows="6" 
+                    :placeholder="tempNote.isChecklist ? 'Tulis barang belanjaan...\nSatu baris = satu barang\nContoh:\nBeras\nTelur\nMinyak' : 'Tulis catatan Anda di sini...'" 
+                    class="duo-input mb-6 font-medium text-gray-600"></textarea>
+                
+                <button @click="addNote()" class="w-full duo-btn-blue py-5 rounded-2xl font-black text-lg">SIMPAN</button>
             </div>
         </div>
     </div>
@@ -410,14 +387,11 @@
             return {
                 activeTab: 'finance',
                 showFinanceModal: false, showLimitModal: false, showTaskModal: false, showNoteModal: false,
-                showSavingModal: false, showTopUpModal: false, showReminderModal: false,
+                showSavingModal: false, showTopUpModal: false,
                 
                 wallet: { balance: 2500000, dailyLimit: 200000, transactions: [], totalExpense: 0 },
                 savings: [],
-                reminders: [],
                 tempSaving: { title: '', target: '' },
-                tempReminder: { title: '', time: '' },
-                activeAlarm: null,
                 
                 selectedSaving: null,
                 topUpAmount: '',
@@ -427,18 +401,18 @@
                     isRunning: false, timer: null, tasks: [], 
                     mode: 'focus', customFocus: 25, customBreak: 5 
                 },
-                tempTask: '', notes: [], tempNote: { title: '', content: '' },
+                tempTask: '', 
+                notes: [], 
+                tempNote: { title: '', content: '', isChecklist: false },
 
                 init() {
-                    this.requestNotification();
-                    const saved = localStorage.getItem('duo_hub_reminders_v3');
+                    const saved = localStorage.getItem('duo_hub_simple_v4');
                     if (saved) {
                         const data = JSON.parse(saved);
                         this.wallet = data.wallet || this.wallet;
                         this.pomo = {...this.pomo, ...data.pomo};
                         this.notes = data.notes || [];
                         this.savings = data.savings || [];
-                        this.reminders = data.reminders || [];
                         this.pomo.isRunning = false;
                         this.pomo.timer = null;
                         this.checkDailyReset();
@@ -450,12 +424,6 @@
                     this.$watch('savings', () => this.saveData());
                     this.$watch('pomo.tasks', () => this.saveData());
                     this.$watch('notes', () => this.saveData());
-                    this.$watch('reminders', () => this.saveData());
-
-                    // Start Reminder Checker Loop
-                    setInterval(() => {
-                        this.checkReminders();
-                    }, 1000);
                 },
 
                 checkDailyReset() {
@@ -472,15 +440,10 @@
                     this.saveData();
                 },
 
-                requestNotification() {
-                    if ("Notification" in window) Notification.requestPermission();
-                },
-
                 saveData() {
                     const data = { 
                         wallet: this.wallet, 
                         savings: this.savings,
-                        reminders: this.reminders,
                         pomo: { 
                             tasks: this.pomo.tasks, 
                             customFocus: this.pomo.customFocus, 
@@ -492,8 +455,7 @@
                         }, 
                         notes: this.notes 
                     };
-                    localStorage.setItem('duo_hub_reminders_v3', JSON.stringify(data));
-                    this.$nextTick(() => lucide.createIcons());
+                    localStorage.setItem('duo_hub_simple_v4', JSON.stringify(data));
                 },
 
                 playSound(type) {
@@ -583,69 +545,6 @@
                     }
                 },
 
-                // Reminder Logic (NEW)
-                addReminder() {
-                    if(!this.tempReminder.title || !this.tempReminder.time) return;
-                    this.reminders.push({
-                        id: Date.now(),
-                        title: this.tempReminder.title,
-                        time: this.tempReminder.time,
-                        notified: false
-                    });
-                    // Sort by time
-                    this.reminders.sort((a, b) => new Date(a.time) - new Date(b.time));
-                    this.tempReminder = { title: '', time: '' };
-                    this.showReminderModal = false;
-                },
-
-                deleteReminder(id) {
-                    this.reminders = this.reminders.filter(r => r.id !== id);
-                },
-
-                checkReminders() {
-                    const now = new Date();
-                    this.reminders.forEach(rem => {
-                        const remTime = new Date(rem.time);
-                        if (!rem.notified && now >= remTime) {
-                            rem.notified = true;
-                            this.triggerAlarm(rem);
-                        }
-                    });
-                },
-
-                triggerAlarm(reminder) {
-                    // Browser Notification
-                    if ("Notification" in window && Notification.permission === "granted") {
-                        new Notification("PENGINGAT!", {
-                            body: reminder.title,
-                            icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968746.png'
-                        });
-                    }
-                    // In-App Visual Alert
-                    this.activeAlarm = reminder;
-                },
-
-                dismissAlarm() {
-                    if(this.activeAlarm) {
-                        this.deleteReminder(this.activeAlarm.id);
-                        this.activeAlarm = null;
-                    }
-                },
-
-                formatDate(dateString) {
-                    const options = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' };
-                    return new Date(dateString).toLocaleDateString('id-ID', options);
-                },
-
-                getTimeRemaining(targetDate) {
-                    const total = Date.parse(targetDate) - Date.parse(new Date());
-                    if (total <= 0) return "WAKTU HABIS";
-                    const days = Math.floor(total / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
-                    if (days > 0) return `${days} HARI LAGI`;
-                    return `${hours} JAM LAGI`;
-                },
-
                 // Pomodoro Logic
                 getCircleOffset() {
                     const total = this.pomo.mode === 'focus' ? this.pomo.focusTime : this.pomo.breakTime;
@@ -707,11 +606,30 @@
                     this.pomo.tasks = this.pomo.tasks.filter(t => t.id !== id);
                 },
 
-                // Note Logic
+                // Note Logic (UPDATED FOR CHECKLIST)
                 addNote() {
                     if(!this.tempNote.title) return;
-                    this.notes.unshift({ id: Date.now(), ...this.tempNote });
-                    this.tempNote = { title: '', content: '' };
+                    
+                    let newNote = {
+                        id: Date.now(),
+                        title: this.tempNote.title,
+                        type: this.tempNote.isChecklist ? 'checklist' : 'text'
+                    };
+
+                    if (this.tempNote.isChecklist) {
+                        // Split content by new line to create checklist items
+                        newNote.items = this.tempNote.content
+                            .split('\n')
+                            .filter(line => line.trim() !== '')
+                            .map(line => ({ text: line, done: false }));
+                    } else {
+                        newNote.content = this.tempNote.content;
+                    }
+
+                    this.notes.unshift(newNote);
+                    
+                    // Reset
+                    this.tempNote = { title: '', content: '', isChecklist: false };
                     this.showNoteModal = false;
                 },
 

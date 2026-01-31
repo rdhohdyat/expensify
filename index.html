@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Duo Personal Hub + Savings</title>
+    <title>Duo Hub: Finance + Productivity</title>
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -19,12 +19,20 @@
         [x-cloak] { display: none !important; }
         
         .duo-card { background: #FFFFFF; border: 2px solid #E5E5E5; border-bottom: 5px solid #E5E5E5; border-radius: 1.25rem; }
+        
+        /* Buttons */
         .duo-btn-green { background: #58CC02; border-bottom: 5px solid #46A302; color: white; transition: all 0.1s; }
         .duo-btn-green:active { border-bottom-width: 0; transform: translateY(5px); }
+        
         .duo-btn-blue { background: #1CB0F6; border-bottom: 5px solid #1899D6; color: white; transition: all 0.1s; }
         .duo-btn-blue:active { border-bottom-width: 0; transform: translateY(5px); }
+        
         .duo-btn-orange { background: #FF9600; border-bottom: 5px solid #E68700; color: white; transition: all 0.1s; }
         .duo-btn-orange:active { border-bottom-width: 0; transform: translateY(5px); }
+
+        .duo-btn-purple { background: #CE82FF; border-bottom: 5px solid #A568CC; color: white; transition: all 0.1s; }
+        .duo-btn-purple:active { border-bottom-width: 0; transform: translateY(5px); }
+        
         .duo-btn-gray { background: #FFFFFF; border: 2px solid #E5E5E5; border-bottom: 4px solid #E5E5E5; color: #AFAFAF; }
         
         .duo-input { border: 2px solid #E5E5E5; border-bottom: 4px solid #E5E5E5; border-radius: 1rem; padding: 1rem; width: 100%; font-weight: 800; outline: none; transition: border-color 0.2s; }
@@ -33,6 +41,10 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         @keyframes pop { 0% { transform: scale(0.95); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
         .fade-in { animation: pop 0.2s ease-out forwards; }
+        
+        /* Shake animation for alarm */
+        @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 10% { transform: translate(-1px, -2px) rotate(-1deg); } 20% { transform: translate(-3px, 0px) rotate(1deg); } 30% { transform: translate(3px, 2px) rotate(0deg); } 40% { transform: translate(1px, -1px) rotate(1deg); } 50% { transform: translate(-1px, 2px) rotate(-1deg); } 60% { transform: translate(-3px, 1px) rotate(0deg); } 70% { transform: translate(3px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -1px) rotate(1deg); } 90% { transform: translate(1px, 2px) rotate(0deg); } 100% { transform: translate(1px, -2px) rotate(-1deg); } }
+        .shake-active { animation: shake 0.5s; animation-iteration-count: infinite; }
     </style>
 </head>
 <body x-data="superApp()" class="no-scrollbar">
@@ -49,15 +61,15 @@
                     <p class="text-lg font-black text-gray-700" x-text="getGreeting()"></p>
                 </div>
             </div>
-            <button @click="showLimitModal = true; playSound('click')" class="w-10 h-10 rounded-xl flex items-center justify-center border-2 border-gray-100">
+            <button @click="showLimitModal = true" class="w-10 h-10 rounded-xl flex items-center justify-center border-2 border-gray-100 hover:bg-gray-50">
                 <i data-lucide="settings" class="w-5 h-5 text-gray-400"></i>
             </button>
         </header>
 
-        <main class="px-6 pb-32 pt-6">
+        <main class="px-6 pb-36 pt-6">
             
             <div x-show="activeTab === 'finance'" x-cloak class="fade-in">
-                <div @click="showLimitModal = true; playSound('click')" class="duo-card p-6 mb-8 border-blue-200 bg-blue-50/30 cursor-pointer">
+                <div @click="showLimitModal = true" class="duo-card p-6 mb-8 border-blue-200 bg-blue-50/30 cursor-pointer">
                     <div class="flex justify-between items-start mb-1">
                         <p class="text-[11px] font-black text-blue-400 uppercase tracking-widest">Saldo Tersedia</p>
                         <i data-lucide="pencil" class="w-3 h-3 text-blue-300"></i>
@@ -78,7 +90,7 @@
 
                 <div class="flex justify-between items-center mb-5">
                     <h4 class="font-black text-xl text-gray-700">Riwayat</h4>
-                    <button @click="showFinanceModal = true; playSound('click')" class="duo-btn-blue w-10 h-10 rounded-xl flex items-center justify-center">
+                    <button @click="showFinanceModal = true" class="duo-btn-blue w-10 h-10 rounded-xl flex items-center justify-center">
                         <i data-lucide="plus" class="w-6 h-6 stroke-[3]"></i>
                     </button>
                 </div>
@@ -111,7 +123,7 @@
             <div x-show="activeTab === 'savings'" x-cloak class="fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h4 class="font-black text-gray-700 text-2xl">Tabungan</h4>
-                    <button @click="showSavingModal = true; playSound('click')" class="duo-btn-orange p-3 rounded-xl">
+                    <button @click="showSavingModal = true" class="duo-btn-orange p-3 rounded-xl">
                         <i data-lucide="piggy-bank" class="w-5 h-5 stroke-[3]"></i>
                     </button>
                 </div>
@@ -158,7 +170,7 @@
                     <span class="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border-2" 
                           :class="pomo.mode === 'focus' ? 'bg-green-50 border-green-200 text-green-500' : 'bg-blue-50 border-blue-200 text-blue-500'"
                           x-text="pomo.mode === 'focus' ? 'Sesi Fokus' : 'Sesi Istirahat'"></span>
-                    <button @click="switchMode(); playSound('click')" class="text-[10px] font-black text-blue-400 uppercase tracking-tighter flex items-center gap-1">
+                    <button @click="switchMode()" class="text-[10px] font-black text-blue-400 uppercase tracking-tighter flex items-center gap-1">
                         <i data-lucide="refresh-cw" class="w-3 h-3"></i> Ganti Sesi
                     </button>
                 </div>
@@ -178,25 +190,25 @@
                 </div>
 
                 <div class="flex flex-col gap-3">
-                    <button @click="toggleTimer(); playSound('click')" :class="pomo.mode === 'focus' ? 'duo-btn-green' : 'duo-btn-blue'" class="w-full py-4 rounded-2xl font-black text-lg" x-text="pomo.isRunning ? 'PAUSE' : 'MULAI'"></button>
-                    <button @click="resetTimer(); playSound('click')" class="text-gray-400 font-black text-[10px] uppercase tracking-widest">Reset Waktu</button>
+                    <button @click="toggleTimer()" :class="pomo.mode === 'focus' ? 'duo-btn-green' : 'duo-btn-blue'" class="w-full py-4 rounded-2xl font-black text-lg" x-text="pomo.isRunning ? 'PAUSE' : 'MULAI'"></button>
+                    <button @click="resetTimer()" class="text-gray-400 font-black text-[10px] uppercase tracking-widest">Reset Waktu</button>
                 </div>
 
                 <div class="mt-10 text-left">
                     <div class="flex justify-between items-center mb-4">
                         <h4 class="font-black text-gray-700 text-xl">Target</h4>
-                        <button @click="showTaskModal = true; playSound('click')" class="text-blue-500 font-black text-xs uppercase">Tambah</button>
+                        <button @click="showTaskModal = true" class="text-blue-500 font-black text-xs uppercase">Tambah</button>
                     </div>
                     <div class="space-y-3">
                         <template x-for="task in pomo.tasks" :key="task.id">
                             <div class="duo-card p-4 flex items-center justify-between" :class="task.done ? 'bg-gray-50 opacity-60' : ''">
-                                <div @click="task.done = !task.done; if(task.done) playSound('ding')" class="flex items-center gap-4 cursor-pointer flex-1">
+                                <div @click="task.done = !task.done" class="flex items-center gap-4 cursor-pointer flex-1">
                                     <div class="w-6 h-6 rounded border-2 flex items-center justify-center shrink-0" :class="task.done ? 'bg-green-500 border-green-500' : 'border-gray-200'">
                                         <i data-lucide="check" class="w-4 h-4 text-white stroke-[4]" x-show="task.done"></i>
                                     </div>
                                     <span class="font-bold text-gray-700" :class="task.done ? 'line-through' : ''" x-text="task.title"></span>
                                 </div>
-                                <button @click="deleteTask(task.id); playSound('click')" class="ml-2 text-gray-300 hover:text-red-500 transition-colors">
+                                <button @click="deleteTask(task.id)" class="ml-2 text-gray-300 hover:text-red-500 transition-colors">
                                     <i data-lucide="x" class="w-5 h-5"></i>
                                 </button>
                             </div>
@@ -205,10 +217,44 @@
                 </div>
             </div>
 
+            <div x-show="activeTab === 'reminders'" x-cloak class="fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h4 class="font-black text-gray-700 text-2xl">Jadwal</h4>
+                    <button @click="showReminderModal = true" class="duo-btn-purple p-3 rounded-xl">
+                        <i data-lucide="bell-plus" class="w-5 h-5 stroke-[3]"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <template x-for="rem in reminders" :key="rem.id">
+                        <div class="duo-card p-5 border-purple-200 bg-purple-50/20">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h5 class="text-lg font-black text-gray-700" x-text="rem.title"></h5>
+                                    <div class="flex items-center gap-2 mt-1">
+                                        <i data-lucide="clock" class="w-3 h-3 text-purple-400"></i>
+                                        <p class="text-sm font-bold text-gray-500" x-text="formatDate(rem.time)"></p>
+                                    </div>
+                                </div>
+                                <button @click="deleteReminder(rem.id)" class="text-gray-300 hover:text-red-500">
+                                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                            <div class="mt-3 text-[10px] font-black uppercase tracking-widest text-purple-400" x-text="getTimeRemaining(rem.time)"></div>
+                        </div>
+                    </template>
+                </div>
+                
+                <div x-show="reminders.length === 0" class="text-center py-20">
+                    <i data-lucide="bell-off" class="w-12 h-12 text-gray-200 mx-auto mb-4"></i>
+                    <p class="text-gray-400 font-bold">Tidak ada pengingat aktif</p>
+                </div>
+            </div>
+
             <div x-show="activeTab === 'notes'" x-cloak class="fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h4 class="font-black text-gray-700 text-2xl">Catatan</h4>
-                    <button @click="showNoteModal = true; playSound('click')" class="duo-btn-blue p-3 rounded-xl"><i data-lucide="edit-3" class="w-5 h-5 stroke-[3]"></i></button>
+                    <button @click="showNoteModal = true" class="duo-btn-blue p-3 rounded-xl"><i data-lucide="edit-3" class="w-5 h-5 stroke-[3]"></i></button>
                 </div>
                 <div class="grid grid-cols-1 gap-4">
                     <template x-for="note in notes" :key="note.id">
@@ -222,23 +268,27 @@
             </div>
         </main>
 
-        <nav class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-100 p-3 z-50 md:absolute">
-            <div class="max-w-[400px] mx-auto flex justify-around items-center">
-                <button @click="activeTab = 'finance'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'finance' ? 'text-blue-500' : 'text-gray-300'">
-                    <i data-lucide="wallet" class="w-6 h-6 stroke-[2.5]"></i>
-                    <span class="text-[9px] font-black uppercase">Dompet</span>
+        <nav class="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-100 p-2 z-50 md:absolute">
+            <div class="max-w-[400px] mx-auto flex justify-between items-center px-2">
+                <button @click="activeTab = 'finance'" class="flex flex-col items-center gap-1 p-2 rounded-xl" :class="activeTab === 'finance' ? 'bg-blue-50 text-blue-500' : 'text-gray-300'">
+                    <i data-lucide="wallet" class="w-5 h-5 stroke-[2.5]"></i>
+                    <span class="text-[9px] font-black uppercase" x-show="activeTab === 'finance'">Dompet</span>
                 </button>
-                <button @click="activeTab = 'savings'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'savings' ? 'text-orange-500' : 'text-gray-300'">
-                    <i data-lucide="piggy-bank" class="w-6 h-6 stroke-[2.5]"></i>
-                    <span class="text-[9px] font-black uppercase">Tabungan</span>
+                <button @click="activeTab = 'savings'" class="flex flex-col items-center gap-1 p-2 rounded-xl" :class="activeTab === 'savings' ? 'bg-orange-50 text-orange-500' : 'text-gray-300'">
+                    <i data-lucide="piggy-bank" class="w-5 h-5 stroke-[2.5]"></i>
+                    <span class="text-[9px] font-black uppercase" x-show="activeTab === 'savings'">Tabungan</span>
                 </button>
-                <button @click="activeTab = 'pomo'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'pomo' ? 'text-green-500' : 'text-gray-300'">
-                    <i data-lucide="target" class="w-6 h-6 stroke-[2.5]"></i>
-                    <span class="text-[9px] font-black uppercase">Fokus</span>
+                <button @click="activeTab = 'pomo'" class="flex flex-col items-center gap-1 p-2 rounded-xl" :class="activeTab === 'pomo' ? 'bg-green-50 text-green-500' : 'text-gray-300'">
+                    <i data-lucide="target" class="w-5 h-5 stroke-[2.5]"></i>
+                    <span class="text-[9px] font-black uppercase" x-show="activeTab === 'pomo'">Fokus</span>
                 </button>
-                <button @click="activeTab = 'notes'; playSound('click')" class="flex flex-col items-center gap-1" :class="activeTab === 'notes' ? 'text-blue-400' : 'text-gray-300'">
-                    <i data-lucide="book-open" class="w-6 h-6 stroke-[2.5]"></i>
-                    <span class="text-[9px] font-black uppercase">Catatan</span>
+                <button @click="activeTab = 'reminders'" class="flex flex-col items-center gap-1 p-2 rounded-xl" :class="activeTab === 'reminders' ? 'bg-purple-50 text-purple-500' : 'text-gray-300'">
+                    <i data-lucide="bell" class="w-5 h-5 stroke-[2.5]"></i>
+                    <span class="text-[9px] font-black uppercase" x-show="activeTab === 'reminders'">Jadwal</span>
+                </button>
+                <button @click="activeTab = 'notes'" class="flex flex-col items-center gap-1 p-2 rounded-xl" :class="activeTab === 'notes' ? 'bg-blue-50 text-blue-400' : 'text-gray-300'">
+                    <i data-lucide="book-open" class="w-5 h-5 stroke-[2.5]"></i>
+                    <span class="text-[9px] font-black uppercase" x-show="activeTab === 'notes'">Catatan</span>
                 </button>
             </div>
         </nav>
@@ -258,7 +308,7 @@
                         <input type="number" x-model.number="wallet.dailyLimit" class="duo-input">
                     </div>
 
-                    <button @click="if(confirm('Reset pengeluaran hari ini?')){ resetDailyLimit(); showLimitModal = false; playSound('ding'); }" 
+                    <button @click="if(confirm('Reset pengeluaran hari ini?')){ resetDailyLimit(); showLimitModal = false; }" 
                             class="w-full py-3 border-2 border-red-200 text-red-500 rounded-xl font-black text-[10px] uppercase hover:bg-red-50 transition-colors">
                         Reset Pengeluaran Hari Ini
                     </button>
@@ -274,7 +324,7 @@
                         <input type="number" x-model.number="pomo.customBreak" @change="updatePomoTimes()" class="duo-input">
                     </div>
                 </div>
-                <button @click="showLimitModal = false; playSound('click')" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg">SIMPAN</button>
+                <button @click="showLimitModal = false" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg">SIMPAN</button>
             </div>
         </div>
 
@@ -321,6 +371,18 @@
             </div>
         </div>
 
+        <div x-show="showReminderModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
+            <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showReminderModal = false"></div>
+            <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200 fade-in">
+                <div class="w-12 h-1.5 bg-gray-200 mx-auto mb-8 rounded-full"></div>
+                <h3 class="font-black text-center text-gray-700 text-xl mb-6">Jadwal Pengingat</h3>
+                <input type="text" x-model="tempReminder.title" placeholder="Ingatkan tentang..." class="duo-input mb-4">
+                <label class="text-[10px] font-black text-gray-400 ml-1">Waktu</label>
+                <input type="datetime-local" x-model="tempReminder.time" class="duo-input mb-8 text-gray-700">
+                <button @click="addReminder()" class="w-full duo-btn-purple py-5 rounded-2xl font-black text-lg">SET PENGINGAT</button>
+            </div>
+        </div>
+
         <div x-show="showNoteModal" x-cloak class="fixed inset-0 z-[60] flex items-end">
             <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showNoteModal = false"></div>
             <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200">
@@ -329,20 +391,34 @@
                 <button @click="addNote()" class="w-full duo-btn-blue py-5 rounded-2xl font-black text-lg">SIMPAN</button>
             </div>
         </div>
-    </div>
 
-    <audio id="snd-click" src="https://www.soundjay.com/buttons/button-16.mp3" preload="auto"></audio>
-    <audio id="snd-ding" src="https://www.myinstants.com/media/sounds/duolingo-correct.mp3" preload="auto"></audio>
+        <div x-show="activeAlarm" x-cloak class="fixed inset-0 z-[80] flex items-center justify-center p-6">
+            <div class="absolute inset-0 bg-purple-900/80 backdrop-blur-md"></div>
+            <div class="relative bg-white w-full max-w-sm rounded-[2rem] p-8 text-center shake-active border-b-8 border-gray-200 shadow-2xl">
+                <div class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="bell-ring" class="w-10 h-10 text-purple-600"></i>
+                </div>
+                <h2 class="text-2xl font-black text-gray-800 mb-2">PENGINGAT!</h2>
+                <p class="text-lg font-bold text-gray-500 mb-8" x-text="activeAlarm?.title"></p>
+                <button @click="dismissAlarm()" class="w-full duo-btn-purple py-4 rounded-2xl font-black text-lg">OKE, MENGERTI</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         function superApp() {
             return {
                 activeTab: 'finance',
                 showFinanceModal: false, showLimitModal: false, showTaskModal: false, showNoteModal: false,
-                showSavingModal: false, showTopUpModal: false,
+                showSavingModal: false, showTopUpModal: false, showReminderModal: false,
+                
                 wallet: { balance: 2500000, dailyLimit: 200000, transactions: [], totalExpense: 0 },
                 savings: [],
+                reminders: [],
                 tempSaving: { title: '', target: '' },
+                tempReminder: { title: '', time: '' },
+                activeAlarm: null,
+                
                 selectedSaving: null,
                 topUpAmount: '',
                 tempTrx: { type: 'expense', amount: '', note: '' },
@@ -355,29 +431,36 @@
 
                 init() {
                     this.requestNotification();
-                    const saved = localStorage.getItem('duo_hub_final_v2');
+                    const saved = localStorage.getItem('duo_hub_reminders_v3');
                     if (saved) {
                         const data = JSON.parse(saved);
                         this.wallet = data.wallet || this.wallet;
                         this.pomo = {...this.pomo, ...data.pomo};
                         this.notes = data.notes || [];
                         this.savings = data.savings || [];
+                        this.reminders = data.reminders || [];
                         this.pomo.isRunning = false;
                         this.pomo.timer = null;
-
                         this.checkDailyReset();
                     }
                     this.$nextTick(() => lucide.createIcons());
+                    
+                    // Auto-save watchers
                     this.$watch('wallet', () => this.saveData());
                     this.$watch('savings', () => this.saveData());
                     this.$watch('pomo.tasks', () => this.saveData());
                     this.$watch('notes', () => this.saveData());
+                    this.$watch('reminders', () => this.saveData());
+
+                    // Start Reminder Checker Loop
+                    setInterval(() => {
+                        this.checkReminders();
+                    }, 1000);
                 },
 
                 checkDailyReset() {
                     const today = new Date().toDateString();
                     const lastReset = localStorage.getItem('last_reset_date');
-                    
                     if (lastReset !== today) {
                         this.resetDailyLimit();
                         localStorage.setItem('last_reset_date', today);
@@ -387,26 +470,17 @@
                 resetDailyLimit() {
                     this.wallet.totalExpense = 0;
                     this.saveData();
-                    // Optional: alert('Limit harian telah direset!');
                 },
 
                 requestNotification() {
                     if ("Notification" in window) Notification.requestPermission();
                 },
 
-                sendNotification(title, body) {
-                    if ("Notification" in window && Notification.permission === "granted") {
-                        new Notification(title, {
-                            body: body,
-                            icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968746.png'
-                        });
-                    }
-                },
-
                 saveData() {
                     const data = { 
                         wallet: this.wallet, 
                         savings: this.savings,
+                        reminders: this.reminders,
                         pomo: { 
                             tasks: this.pomo.tasks, 
                             customFocus: this.pomo.customFocus, 
@@ -418,21 +492,20 @@
                         }, 
                         notes: this.notes 
                     };
-                    localStorage.setItem('duo_hub_final_v2', JSON.stringify(data));
+                    localStorage.setItem('duo_hub_reminders_v3', JSON.stringify(data));
                     this.$nextTick(() => lucide.createIcons());
                 },
 
                 playSound(type) {
-                    const audio = document.getElementById(`snd-${type}`);
-                    if(audio) { audio.currentTime = 0; audio.play().catch(e => {}); }
+                    // SUARA DIHILANGKAN
                 },
 
                 getGreeting() {
                     const hrs = new Date().getHours();
-                    if (hrs >= 5 && hrs < 11) return "Pagi, Ridho!";
-                    if (hrs >= 11 && hrs < 15) return "Siang, Ridho!";
-                    if (hrs >= 15 && hrs < 18) return "Sore, Ridho!";
-                    return "Malam, Ridho!";
+                    if (hrs >= 5 && hrs < 11) return "Pagi, Semangat!";
+                    if (hrs >= 11 && hrs < 15) return "Siang, Terus Maju!";
+                    if (hrs >= 15 && hrs < 18) return "Sore, Jangan Lelah!";
+                    return "Malam, Istirahatlah!";
                 },
 
                 formatIDR(num) {
@@ -454,7 +527,6 @@
                         id: Date.now(), ...this.tempTrx, amount: amt,
                         time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
                     });
-                    this.playSound('ding');
                     this.showFinanceModal = false;
                     this.tempTrx = { type: 'expense', amount: '', note: '' };
                 },
@@ -466,7 +538,6 @@
                         if(trx.type === 'income') this.wallet.balance -= trx.amount;
                         else { this.wallet.balance += trx.amount; this.wallet.totalExpense -= trx.amount; }
                         this.wallet.transactions.splice(index, 1);
-                        this.playSound('click');
                     }
                 },
 
@@ -481,14 +552,12 @@
                     });
                     this.tempSaving = { title: '', target: '' };
                     this.showSavingModal = false;
-                    this.playSound('ding');
                 },
 
                 topUpSaving(item) {
                     this.selectedSaving = item;
                     this.showTopUpModal = true;
                     this.topUpAmount = '';
-                    this.playSound('click');
                 },
 
                 confirmTopUp() {
@@ -499,15 +568,11 @@
                     }
                     this.selectedSaving.current += amt;
                     this.wallet.balance -= amt;
-                    
-                    // Catat di riwayat
                     this.wallet.transactions.unshift({
                         id: Date.now(), type: 'expense', amount: amt, note: `Nabung: ${this.selectedSaving.title}`,
                         time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
                     });
-
                     this.showTopUpModal = false;
-                    this.playSound('ding');
                 },
 
                 deleteSaving(id) {
@@ -515,8 +580,70 @@
                         const item = this.savings.find(s => s.id === id);
                         this.wallet.balance += item.current;
                         this.savings = this.savings.filter(s => s.id !== id);
-                        this.playSound('click');
                     }
+                },
+
+                // Reminder Logic (NEW)
+                addReminder() {
+                    if(!this.tempReminder.title || !this.tempReminder.time) return;
+                    this.reminders.push({
+                        id: Date.now(),
+                        title: this.tempReminder.title,
+                        time: this.tempReminder.time,
+                        notified: false
+                    });
+                    // Sort by time
+                    this.reminders.sort((a, b) => new Date(a.time) - new Date(b.time));
+                    this.tempReminder = { title: '', time: '' };
+                    this.showReminderModal = false;
+                },
+
+                deleteReminder(id) {
+                    this.reminders = this.reminders.filter(r => r.id !== id);
+                },
+
+                checkReminders() {
+                    const now = new Date();
+                    this.reminders.forEach(rem => {
+                        const remTime = new Date(rem.time);
+                        if (!rem.notified && now >= remTime) {
+                            rem.notified = true;
+                            this.triggerAlarm(rem);
+                        }
+                    });
+                },
+
+                triggerAlarm(reminder) {
+                    // Browser Notification
+                    if ("Notification" in window && Notification.permission === "granted") {
+                        new Notification("PENGINGAT!", {
+                            body: reminder.title,
+                            icon: 'https://cdn-icons-png.flaticon.com/512/5968/5968746.png'
+                        });
+                    }
+                    // In-App Visual Alert
+                    this.activeAlarm = reminder;
+                },
+
+                dismissAlarm() {
+                    if(this.activeAlarm) {
+                        this.deleteReminder(this.activeAlarm.id);
+                        this.activeAlarm = null;
+                    }
+                },
+
+                formatDate(dateString) {
+                    const options = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' };
+                    return new Date(dateString).toLocaleDateString('id-ID', options);
+                },
+
+                getTimeRemaining(targetDate) {
+                    const total = Date.parse(targetDate) - Date.parse(new Date());
+                    if (total <= 0) return "WAKTU HABIS";
+                    const days = Math.floor(total / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
+                    if (days > 0) return `${days} HARI LAGI`;
+                    return `${hours} JAM LAGI`;
                 },
 
                 // Pomodoro Logic
@@ -549,7 +676,6 @@
                             } else {
                                 clearInterval(this.pomo.timer);
                                 this.pomo.isRunning = false;
-                                this.playSound('ding');
                                 this.switchMode();
                             }
                         }, 1000);
@@ -574,7 +700,7 @@
                 addTask() {
                     if(!this.tempTask) return;
                     this.pomo.tasks.push({ id: Date.now(), title: this.tempTask, done: false });
-                    this.tempTask = ''; this.showTaskModal = false; this.playSound('click');
+                    this.tempTask = ''; this.showTaskModal = false;
                 },
 
                 deleteTask(id) {
@@ -586,12 +712,11 @@
                     if(!this.tempNote.title) return;
                     this.notes.unshift({ id: Date.now(), ...this.tempNote });
                     this.tempNote = { title: '', content: '' };
-                    this.showNoteModal = false; this.playSound('click');
+                    this.showNoteModal = false;
                 },
 
                 deleteNote(id) { 
                     this.notes = this.notes.filter(n => n.id !== id); 
-                    this.playSound('click'); 
                 }
             }
         }

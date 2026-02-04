@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Duo Hub: Finance + Tasks</title>
+    <title>Duo Hub: Cash & Cashless</title>
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -31,6 +31,7 @@
         .duo-btn-orange:active { border-bottom-width: 0; transform: translateY(5px); }
         
         .duo-btn-gray { background: #FFFFFF; border: 2px solid #E5E5E5; border-bottom: 4px solid #E5E5E5; color: #AFAFAF; }
+        .duo-btn-gray-active { background: #E5E5E5; border: 2px solid #D4D4D4; border-bottom: 0px; color: #777; transform: translateY(4px); }
         
         .duo-input { border: 2px solid #E5E5E5; border-bottom: 4px solid #E5E5E5; border-radius: 1rem; padding: 1rem; width: 100%; font-weight: 800; outline: none; transition: border-color 0.2s; }
         .duo-input:focus { border-color: #1CB0F6; }
@@ -62,14 +63,31 @@
         <main class="px-6 pb-36 pt-6">
             
             <div x-show="activeTab === 'finance'" x-cloak class="fade-in">
-                <div @click="showLimitModal = true" class="duo-card p-6 mb-8 border-blue-200 bg-blue-50/30 cursor-pointer">
+                <div class="duo-card p-6 mb-8 border-blue-200 bg-blue-50/30">
                     <div class="flex justify-between items-start mb-1">
-                        <p class="text-[11px] font-black text-blue-400 uppercase tracking-widest">Saldo Tersedia</p>
-                        <i data-lucide="pencil" class="w-3 h-3 text-blue-300"></i>
+                        <p class="text-[11px] font-black text-blue-400 uppercase tracking-widest">Total Aset</p>
+                        <i data-lucide="wallet" class="w-4 h-4 text-blue-300"></i>
                     </div>
-                    <h3 class="text-3xl font-black text-gray-800 mb-6" x-text="formatIDR(wallet.balance)"></h3>
+                    <h3 class="text-3xl font-black text-gray-800 mb-6" x-text="formatIDR(wallet.cash + wallet.nonCash)"></h3>
                     
-                    <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-white p-3 rounded-xl border-2 border-blue-100">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i data-lucide="banknote" class="w-3 h-3 text-green-500"></i>
+                                <span class="text-[10px] font-black text-gray-400 uppercase">Tunai</span>
+                            </div>
+                            <p class="font-black text-gray-700 text-sm" x-text="formatIDR(wallet.cash)"></p>
+                        </div>
+                        <div class="bg-white p-3 rounded-xl border-2 border-blue-100">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i data-lucide="credit-card" class="w-3 h-3 text-purple-500"></i>
+                                <span class="text-[10px] font-black text-gray-400 uppercase">Non-Tunai</span>
+                            </div>
+                            <p class="font-black text-gray-700 text-sm" x-text="formatIDR(wallet.nonCash)"></p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3 pt-4 border-t-2 border-blue-100">
                         <div class="flex justify-between items-end">
                             <span class="text-xs font-black text-gray-400 uppercase">Limit Harian</span>
                             <span class="text-xs font-black text-gray-600" x-text="financeProgress + '%'"></span>
@@ -77,7 +95,10 @@
                         <div class="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
                             <div class="h-full bg-green-500 rounded-full transition-all duration-500 border-b-4 border-green-600" :style="`width: ${financeProgress}%`"></div>
                         </div>
-                        <p class="text-[10px] text-center font-black text-gray-400 uppercase" x-text="'Sisa Limit: ' + formatIDR(wallet.dailyLimit - wallet.totalExpense)"></p>
+                        <div class="flex justify-between">
+                            <p class="text-[10px] font-black text-gray-400 uppercase" x-text="'Pakai: ' + formatIDR(wallet.totalExpense)"></p>
+                            <p class="text-[10px] font-black text-gray-400 uppercase" x-text="'Sisa: ' + formatIDR(wallet.dailyLimit - wallet.totalExpense)"></p>
+                        </div>
                     </div>
                 </div>
 
@@ -93,12 +114,22 @@
                         <div class="duo-card p-4 flex items-center justify-between group">
                             <div class="flex items-center gap-4">
                                 <div :class="trx.type === 'income' ? 'bg-yellow-400 border-yellow-600' : 'bg-blue-400 border-blue-600'" 
-                                     class="w-11 h-11 rounded-xl border-b-4 flex items-center justify-center text-white">
+                                     class="w-11 h-11 rounded-xl border-b-4 flex items-center justify-center text-white shrink-0 relative">
                                     <i :data-lucide="trx.type === 'income' ? 'arrow-down-left' : 'arrow-up-right'" class="w-5 h-5"></i>
+                                    <div class="absolute -bottom-2 -right-2 bg-white rounded-full p-1 border border-gray-100 shadow-sm">
+                                        <i :data-lucide="trx.method === 'non-cash' ? 'credit-card' : 'banknote'" 
+                                           class="w-3 h-3" 
+                                           :class="trx.method === 'non-cash' ? 'text-purple-500' : 'text-green-500'"></i>
+                                    </div>
                                 </div>
                                 <div>
                                     <p class="text-sm font-black text-gray-700" x-text="trx.note"></p>
-                                    <p class="text-[10px] text-gray-400 font-bold uppercase" x-text="trx.time"></p>
+                                    <div class="flex items-center gap-2">
+                                        <p class="text-[10px] text-gray-400 font-bold uppercase" x-text="trx.time"></p>
+                                        <span class="text-[9px] px-1.5 py-0.5 rounded font-black uppercase"
+                                              :class="trx.method === 'non-cash' ? 'bg-purple-100 text-purple-600' : 'bg-green-100 text-green-600'"
+                                              x-text="trx.method === 'non-cash' ? 'NON-TUNAI' : 'TUNAI'"></span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
@@ -283,22 +314,29 @@
             <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showLimitModal = false"></div>
             <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200 overflow-y-auto max-h-[90vh] fade-in">
                 <div class="w-12 h-1.5 bg-gray-200 mx-auto mb-8 rounded-full"></div>
-                <h3 class="font-black text-gray-400 uppercase text-[10px] tracking-widest mb-4">Pengaturan Keuangan</h3>
-                <div class="space-y-4 mb-8">
+                <h3 class="font-black text-gray-400 uppercase text-[10px] tracking-widest mb-4">Edit Saldo Manual</h3>
+                <div class="grid grid-cols-2 gap-4 mb-6">
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 ml-1">Saldo Total</label>
-                        <input type="number" x-model.number="wallet.balance" class="duo-input">
+                        <label class="text-[10px] font-black text-gray-400 ml-1">Tunai</label>
+                        <input type="number" x-model.number="wallet.cash" class="duo-input">
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-gray-400 ml-1">Limit Pengeluaran Harian</label>
-                        <input type="number" x-model.number="wallet.dailyLimit" class="duo-input">
+                        <label class="text-[10px] font-black text-gray-400 ml-1">Non-Tunai</label>
+                        <input type="number" x-model.number="wallet.nonCash" class="duo-input">
                     </div>
-
-                    <button @click="if(confirm('Reset pengeluaran hari ini?')){ resetDailyLimit(); showLimitModal = false; }" 
-                            class="w-full py-3 border-2 border-red-200 text-red-500 rounded-xl font-black text-[10px] uppercase hover:bg-red-50 transition-colors">
-                        Reset Pengeluaran Hari Ini
-                    </button>
                 </div>
+
+                <h3 class="font-black text-gray-400 uppercase text-[10px] tracking-widest mb-4">Pengaturan Limit</h3>
+                <div class="mb-6">
+                    <label class="text-[10px] font-black text-gray-400 ml-1">Limit Pengeluaran Harian</label>
+                    <input type="number" x-model.number="wallet.dailyLimit" class="duo-input">
+                </div>
+
+                <button @click="if(confirm('Reset pengeluaran hari ini?')){ resetDailyLimit(); showLimitModal = false; }" 
+                        class="w-full mb-8 py-3 border-2 border-red-200 text-red-500 rounded-xl font-black text-[10px] uppercase hover:bg-red-50 transition-colors">
+                    Reset Pengeluaran Hari Ini
+                </button>
+
                 <h3 class="font-black text-gray-400 uppercase text-[10px] tracking-widest mb-4">Durasi Pomodoro (Menit)</h3>
                 <div class="grid grid-cols-2 gap-4 mb-10">
                     <div>
@@ -310,7 +348,7 @@
                         <input type="number" x-model.number="pomo.customBreak" @change="updatePomoTimes()" class="duo-input">
                     </div>
                 </div>
-                <button @click="showLimitModal = false" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg">SIMPAN</button>
+                <button @click="showLimitModal = false; saveData()" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg">SIMPAN</button>
             </div>
         </div>
 
@@ -318,10 +356,23 @@
             <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showFinanceModal = false"></div>
             <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200 fade-in">
                 <div class="w-12 h-1.5 bg-gray-200 mx-auto mb-8 rounded-full"></div>
-                <div class="flex gap-4 mb-8">
+                
+                <div class="flex gap-4 mb-4">
                     <button @click="tempTrx.type = 'expense'" :class="tempTrx.type === 'expense' ? 'duo-btn-blue' : 'duo-btn-gray'" class="flex-1 py-3 rounded-2xl font-black text-[10px] uppercase">Pengeluaran</button>
                     <button @click="tempTrx.type = 'income'" :class="tempTrx.type === 'income' ? 'duo-btn-green' : 'duo-btn-gray'" class="flex-1 py-3 rounded-2xl font-black text-[10px] uppercase">Pemasukan</button>
                 </div>
+
+                <div class="flex gap-2 mb-8 justify-center bg-gray-100 p-1 rounded-xl">
+                    <button @click="tempTrx.method = 'cash'" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-2 transition-all"
+                        :class="tempTrx.method === 'cash' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'">
+                        <i data-lucide="banknote" class="w-3 h-3"></i> Tunai
+                    </button>
+                    <button @click="tempTrx.method = 'non-cash'" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-2 transition-all"
+                        :class="tempTrx.method === 'non-cash' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'">
+                        <i data-lucide="credit-card" class="w-3 h-3"></i> Non-Tunai
+                    </button>
+                </div>
+
                 <input type="number" x-model="tempTrx.amount" placeholder="0" class="w-full bg-transparent text-center text-5xl font-black text-gray-700 outline-none mb-8">
                 <input type="text" x-model="tempTrx.note" placeholder="Untuk apa?" class="duo-input text-center mb-8">
                 <button @click="addTransaction()" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg">SIMPAN</button>
@@ -343,7 +394,23 @@
             <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showTopUpModal = false"></div>
             <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200 fade-in">
                 <h3 class="font-black text-center text-gray-700 text-xl mb-2" x-text="'Tabungan ' + (selectedSaving?.title || '')"></h3>
-                <p class="text-center text-gray-400 text-sm font-bold mb-6">Pindahkan dari saldo utama</p>
+                <p class="text-center text-gray-400 text-sm font-bold mb-6">Ambil saldo dari mana?</p>
+                
+                <div class="flex gap-2 mb-6">
+                    <button @click="topUpSource = 'cash'" class="flex-1 py-3 rounded-xl border-2 flex flex-col items-center gap-1 transition-colors"
+                        :class="topUpSource === 'cash' ? 'border-green-500 bg-green-50' : 'border-gray-100'">
+                        <i data-lucide="banknote" class="w-5 h-5" :class="topUpSource === 'cash' ? 'text-green-500' : 'text-gray-300'"></i>
+                        <span class="text-[9px] font-black uppercase" :class="topUpSource === 'cash' ? 'text-green-600' : 'text-gray-400'">Tunai</span>
+                        <span class="text-[9px] font-bold text-gray-400" x-text="formatIDR(wallet.cash)"></span>
+                    </button>
+                    <button @click="topUpSource = 'non-cash'" class="flex-1 py-3 rounded-xl border-2 flex flex-col items-center gap-1 transition-colors"
+                        :class="topUpSource === 'non-cash' ? 'border-purple-500 bg-purple-50' : 'border-gray-100'">
+                        <i data-lucide="credit-card" class="w-5 h-5" :class="topUpSource === 'non-cash' ? 'text-purple-500' : 'text-gray-300'"></i>
+                        <span class="text-[9px] font-black uppercase" :class="topUpSource === 'non-cash' ? 'text-purple-600' : 'text-gray-400'">Non-Tunai</span>
+                        <span class="text-[9px] font-bold text-gray-400" x-text="formatIDR(wallet.nonCash)"></span>
+                    </button>
+                </div>
+
                 <input type="number" x-model.number="topUpAmount" placeholder="Nominal" class="w-full bg-transparent text-center text-4xl font-black text-gray-700 outline-none mb-8">
                 <button @click="confirmTopUp()" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg">KONFIRMASI</button>
             </div>
@@ -365,7 +432,7 @@
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="font-black text-gray-700 text-lg">Buat Catatan</h3>
                     <div class="flex items-center gap-2">
-                        <label class="text-[10px] font-black uppercase text-gray-400">Mode Ceklis (Belanja)</label>
+                        <label class="text-[10px] font-black uppercase text-gray-400">Mode Ceklis</label>
                         <div @click="tempNote.isChecklist = !tempNote.isChecklist" class="w-10 h-6 rounded-full p-1 cursor-pointer transition-colors" :class="tempNote.isChecklist ? 'bg-green-500' : 'bg-gray-200'">
                             <div class="w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform" :class="tempNote.isChecklist ? 'translate-x-4' : ''"></div>
                         </div>
@@ -389,13 +456,18 @@
                 showFinanceModal: false, showLimitModal: false, showTaskModal: false, showNoteModal: false,
                 showSavingModal: false, showTopUpModal: false,
                 
-                wallet: { balance: 2500000, dailyLimit: 200000, transactions: [], totalExpense: 0 },
+                // Updated Wallet Structure
+                wallet: { cash: 1000000, nonCash: 1500000, dailyLimit: 200000, transactions: [], totalExpense: 0 },
+                
                 savings: [],
                 tempSaving: { title: '', target: '' },
                 
                 selectedSaving: null,
                 topUpAmount: '',
-                tempTrx: { type: 'expense', amount: '', note: '' },
+                topUpSource: 'cash', // 'cash' or 'non-cash'
+
+                tempTrx: { type: 'expense', amount: '', note: '', method: 'cash' },
+                
                 pomo: { 
                     focusTime: 1500, breakTime: 300, timeLeft: 1500, 
                     isRunning: false, timer: null, tasks: [], 
@@ -406,16 +478,40 @@
                 tempNote: { title: '', content: '', isChecklist: false },
 
                 init() {
-                    const saved = localStorage.getItem('duo_hub_simple_v4');
+                    const saved = localStorage.getItem('duo_hub_simple_v5'); // Changed key to force migration/fresh start for v5 structure
                     if (saved) {
                         const data = JSON.parse(saved);
-                        this.wallet = data.wallet || this.wallet;
+                        
+                        // Migration Logic: If old data had 'balance' but no 'cash', move it.
+                        if (data.wallet && data.wallet.balance !== undefined && data.wallet.cash === undefined) {
+                            data.wallet.cash = data.wallet.balance;
+                            data.wallet.nonCash = 0;
+                            delete data.wallet.balance;
+                        }
+
+                        this.wallet = {...this.wallet, ...data.wallet}; // Merge carefully
                         this.pomo = {...this.pomo, ...data.pomo};
                         this.notes = data.notes || [];
                         this.savings = data.savings || [];
                         this.pomo.isRunning = false;
                         this.pomo.timer = null;
                         this.checkDailyReset();
+                    } else {
+                        // Attempt to migrate from v4 if v5 doesn't exist
+                        const oldSaved = localStorage.getItem('duo_hub_simple_v4');
+                        if (oldSaved) {
+                            const oldData = JSON.parse(oldSaved);
+                            this.wallet.cash = oldData.wallet.balance || 0;
+                            this.wallet.nonCash = 0;
+                            this.wallet.dailyLimit = oldData.wallet.dailyLimit || 200000;
+                            this.wallet.transactions = oldData.wallet.transactions || [];
+                            // Add default method to old transactions
+                            this.wallet.transactions.forEach(t => t.method = 'cash');
+                            
+                            this.savings = oldData.savings || [];
+                            this.notes = oldData.notes || [];
+                            this.saveData(); // Save immediately to new format
+                        }
                     }
                     this.$nextTick(() => lucide.createIcons());
                     
@@ -455,11 +551,7 @@
                         }, 
                         notes: this.notes 
                     };
-                    localStorage.setItem('duo_hub_simple_v4', JSON.stringify(data));
-                },
-
-                playSound(type) {
-                    // SUARA DIHILANGKAN
+                    localStorage.setItem('duo_hub_simple_v5', JSON.stringify(data));
                 },
 
                 getGreeting() {
@@ -479,31 +571,55 @@
                     return Math.min(Math.round((this.wallet.totalExpense / this.wallet.dailyLimit) * 100), 100) || 0;
                 },
 
-                // Finance Logic
+                // Finance Logic Updated
                 addTransaction() {
                     if(!this.tempTrx.amount || !this.tempTrx.note) return;
                     const amt = Number(this.tempTrx.amount);
-                    if(this.tempTrx.type === 'income') this.wallet.balance += amt;
-                    else { this.wallet.balance -= amt; this.wallet.totalExpense += amt; }
+                    const method = this.tempTrx.method || 'cash';
+                    
+                    if(this.tempTrx.type === 'income') {
+                        if(method === 'cash') this.wallet.cash += amt;
+                        else this.wallet.nonCash += amt;
+                    } else {
+                        // Expense logic
+                        if(method === 'cash') this.wallet.cash -= amt;
+                        else this.wallet.nonCash -= amt;
+                        
+                        this.wallet.totalExpense += amt; 
+                    }
+
                     this.wallet.transactions.unshift({
-                        id: Date.now(), ...this.tempTrx, amount: amt,
+                        id: Date.now(), 
+                        ...this.tempTrx, 
+                        amount: amt,
                         time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
                     });
+                    
                     this.showFinanceModal = false;
-                    this.tempTrx = { type: 'expense', amount: '', note: '' };
+                    this.tempTrx = { type: 'expense', amount: '', note: '', method: 'cash' };
+                    this.$nextTick(() => lucide.createIcons());
                 },
 
                 deleteTransaction(id) {
                     const index = this.wallet.transactions.findIndex(t => t.id === id);
                     if (index > -1) {
                         const trx = this.wallet.transactions[index];
-                        if(trx.type === 'income') this.wallet.balance -= trx.amount;
-                        else { this.wallet.balance += trx.amount; this.wallet.totalExpense -= trx.amount; }
+                        const method = trx.method || 'cash'; // fallback for old data
+
+                        // Reverse the transaction
+                        if(trx.type === 'income') {
+                            if(method === 'cash') this.wallet.cash -= trx.amount;
+                            else this.wallet.nonCash -= trx.amount;
+                        } else {
+                            if(method === 'cash') this.wallet.cash += trx.amount;
+                            else this.wallet.nonCash += trx.amount;
+                            this.wallet.totalExpense -= trx.amount;
+                        }
                         this.wallet.transactions.splice(index, 1);
                     }
                 },
 
-                // Savings Logic
+                // Savings Logic Updated
                 addSaving() {
                     if(!this.tempSaving.title || !this.tempSaving.target) return;
                     this.savings.push({
@@ -520,27 +636,48 @@
                     this.selectedSaving = item;
                     this.showTopUpModal = true;
                     this.topUpAmount = '';
+                    this.topUpSource = 'cash'; // reset default
+                    this.$nextTick(() => lucide.createIcons());
                 },
 
                 confirmTopUp() {
                     const amt = Number(this.topUpAmount);
-                    if(amt <= 0 || amt > this.wallet.balance) {
-                        alert("Saldo tidak cukup!");
+                    const sourceBalance = this.topUpSource === 'cash' ? this.wallet.cash : this.wallet.nonCash;
+
+                    if(amt <= 0 || amt > sourceBalance) {
+                        alert("Saldo " + (this.topUpSource === 'cash' ? 'Tunai' : 'Non-Tunai') + " tidak cukup!");
                         return;
                     }
+
+                    // Deduct from source
+                    if(this.topUpSource === 'cash') this.wallet.cash -= amt;
+                    else this.wallet.nonCash -= amt;
+
                     this.selectedSaving.current += amt;
-                    this.wallet.balance -= amt;
+                    
+                    // Record transaction
                     this.wallet.transactions.unshift({
-                        id: Date.now(), type: 'expense', amount: amt, note: `Nabung: ${this.selectedSaving.title}`,
+                        id: Date.now(), 
+                        type: 'expense', 
+                        amount: amt, 
+                        note: `Nabung: ${this.selectedSaving.title}`,
+                        method: this.topUpSource,
                         time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
                     });
+                    
                     this.showTopUpModal = false;
+                    this.$nextTick(() => lucide.createIcons());
                 },
 
                 deleteSaving(id) {
-                    if(confirm('Batalkan tabungan ini? Saldo akan kembali ke dompet.')) {
+                    if(confirm('Batalkan tabungan ini? Saldo akan dikembalikan ke Non-Tunai.')) {
                         const item = this.savings.find(s => s.id === id);
-                        this.wallet.balance += item.current;
+                        // Default refund to Non-Cash (assuming savings are in bank)
+                        this.wallet.nonCash += item.current;
+                        
+                        // Optional: Record refund transaction? 
+                        // For simplicity, we just add balance back, similar to deleting a transaction.
+                        
                         this.savings = this.savings.filter(s => s.id !== id);
                     }
                 },
@@ -606,7 +743,7 @@
                     this.pomo.tasks = this.pomo.tasks.filter(t => t.id !== id);
                 },
 
-                // Note Logic (UPDATED FOR CHECKLIST)
+                // Note Logic
                 addNote() {
                     if(!this.tempNote.title) return;
                     
@@ -617,7 +754,6 @@
                     };
 
                     if (this.tempNote.isChecklist) {
-                        // Split content by new line to create checklist items
                         newNote.items = this.tempNote.content
                             .split('\n')
                             .filter(line => line.trim() !== '')
@@ -627,8 +763,6 @@
                     }
 
                     this.notes.unshift(newNote);
-                    
-                    // Reset
                     this.tempNote = { title: '', content: '', isChecklist: false };
                     this.showNoteModal = false;
                 },

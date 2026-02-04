@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Duo Hub: Cash & Cashless</title>
+    <title>Duo Hub: Finance + Notes</title>
     <link rel="manifest" href="manifest.json">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -31,7 +31,6 @@
         .duo-btn-orange:active { border-bottom-width: 0; transform: translateY(5px); }
         
         .duo-btn-gray { background: #FFFFFF; border: 2px solid #E5E5E5; border-bottom: 4px solid #E5E5E5; color: #AFAFAF; }
-        .duo-btn-gray-active { background: #E5E5E5; border: 2px solid #D4D4D4; border-bottom: 0px; color: #777; transform: translateY(4px); }
         
         .duo-input { border: 2px solid #E5E5E5; border-bottom: 4px solid #E5E5E5; border-radius: 1rem; padding: 1rem; width: 100%; font-weight: 800; outline: none; transition: border-color 0.2s; }
         .duo-input:focus { border-color: #1CB0F6; }
@@ -244,7 +243,7 @@
             <div x-show="activeTab === 'notes'" x-cloak class="fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h4 class="font-black text-gray-700 text-2xl">Catatan</h4>
-                    <button @click="showNoteModal = true" class="duo-btn-blue p-3 rounded-xl"><i data-lucide="edit-3" class="w-5 h-5 stroke-[3]"></i></button>
+                    <button @click="openNoteModal()" class="duo-btn-blue p-3 rounded-xl"><i data-lucide="plus" class="w-5 h-5 stroke-[3]"></i></button>
                 </div>
                 
                 <div class="grid grid-cols-1 gap-4">
@@ -276,8 +275,15 @@
                             <template x-if="!note.type || note.type === 'text'">
                                 <p class="text-sm font-bold text-gray-500 whitespace-pre-wrap" x-text="note.content"></p>
                             </template>
-
-                            <button @click="deleteNote(note.id)" class="mt-4 w-full py-2 border border-red-100 text-red-400 font-black text-[10px] uppercase rounded-lg hover:bg-red-50">Hapus</button>
+                            
+                            <div class="flex gap-2 mt-4">
+                                <button @click="openEditNote(note)" class="flex-1 py-2 border border-blue-100 text-blue-400 font-black text-[10px] uppercase rounded-lg hover:bg-blue-50 transition-colors">
+                                    Edit
+                                </button>
+                                <button @click="deleteNote(note.id)" class="flex-1 py-2 border border-red-100 text-red-400 font-black text-[10px] uppercase rounded-lg hover:bg-red-50 transition-colors">
+                                    Hapus
+                                </button>
+                            </div>
                         </div>
                     </template>
                 </div>
@@ -356,12 +362,10 @@
             <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" @click="showFinanceModal = false"></div>
             <div class="relative bg-white w-full rounded-t-[2.5rem] p-8 border-t-4 border-gray-200 fade-in">
                 <div class="w-12 h-1.5 bg-gray-200 mx-auto mb-8 rounded-full"></div>
-                
                 <div class="flex gap-4 mb-4">
                     <button @click="tempTrx.type = 'expense'" :class="tempTrx.type === 'expense' ? 'duo-btn-blue' : 'duo-btn-gray'" class="flex-1 py-3 rounded-2xl font-black text-[10px] uppercase">Pengeluaran</button>
                     <button @click="tempTrx.type = 'income'" :class="tempTrx.type === 'income' ? 'duo-btn-green' : 'duo-btn-gray'" class="flex-1 py-3 rounded-2xl font-black text-[10px] uppercase">Pemasukan</button>
                 </div>
-
                 <div class="flex gap-2 mb-8 justify-center bg-gray-100 p-1 rounded-xl">
                     <button @click="tempTrx.method = 'cash'" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase flex items-center justify-center gap-2 transition-all"
                         :class="tempTrx.method === 'cash' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-400'">
@@ -372,7 +376,6 @@
                         <i data-lucide="credit-card" class="w-3 h-3"></i> Non-Tunai
                     </button>
                 </div>
-
                 <input type="number" x-model="tempTrx.amount" placeholder="0" class="w-full bg-transparent text-center text-5xl font-black text-gray-700 outline-none mb-8">
                 <input type="text" x-model="tempTrx.note" placeholder="Untuk apa?" class="duo-input text-center mb-8">
                 <button @click="addTransaction()" class="w-full duo-btn-green py-5 rounded-2xl font-black text-lg">SIMPAN</button>
@@ -430,7 +433,7 @@
                 <div class="w-12 h-1.5 bg-gray-200 mx-auto mb-8 rounded-full"></div>
                 
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-black text-gray-700 text-lg">Buat Catatan</h3>
+                    <h3 class="font-black text-gray-700 text-lg" x-text="editingNoteId ? 'Edit Catatan' : 'Buat Catatan'"></h3>
                     <div class="flex items-center gap-2">
                         <label class="text-[10px] font-black uppercase text-gray-400">Mode Ceklis</label>
                         <div @click="tempNote.isChecklist = !tempNote.isChecklist" class="w-10 h-6 rounded-full p-1 cursor-pointer transition-colors" :class="tempNote.isChecklist ? 'bg-green-500' : 'bg-gray-200'">
@@ -444,7 +447,7 @@
                     :placeholder="tempNote.isChecklist ? 'Tulis barang belanjaan...\nSatu baris = satu barang\nContoh:\nBeras\nTelur\nMinyak' : 'Tulis catatan Anda di sini...'" 
                     class="duo-input mb-6 font-medium text-gray-600"></textarea>
                 
-                <button @click="addNote()" class="w-full duo-btn-blue py-5 rounded-2xl font-black text-lg">SIMPAN</button>
+                <button @click="saveNote()" class="w-full duo-btn-blue py-5 rounded-2xl font-black text-lg" x-text="editingNoteId ? 'UPDATE' : 'SIMPAN'"></button>
             </div>
         </div>
     </div>
@@ -456,18 +459,13 @@
                 showFinanceModal: false, showLimitModal: false, showTaskModal: false, showNoteModal: false,
                 showSavingModal: false, showTopUpModal: false,
                 
-                // Updated Wallet Structure
                 wallet: { cash: 1000000, nonCash: 1500000, dailyLimit: 200000, transactions: [], totalExpense: 0 },
-                
                 savings: [],
                 tempSaving: { title: '', target: '' },
-                
                 selectedSaving: null,
                 topUpAmount: '',
-                topUpSource: 'cash', // 'cash' or 'non-cash'
-
+                topUpSource: 'cash', 
                 tempTrx: { type: 'expense', amount: '', note: '', method: 'cash' },
-                
                 pomo: { 
                     focusTime: 1500, breakTime: 300, timeLeft: 1500, 
                     isRunning: false, timer: null, tasks: [], 
@@ -476,46 +474,22 @@
                 tempTask: '', 
                 notes: [], 
                 tempNote: { title: '', content: '', isChecklist: false },
+                editingNoteId: null, // NEW: Track currently edited note
 
                 init() {
-                    const saved = localStorage.getItem('duo_hub_simple_v5'); // Changed key to force migration/fresh start for v5 structure
+                    const saved = localStorage.getItem('duo_hub_simple_v5');
                     if (saved) {
                         const data = JSON.parse(saved);
-                        
-                        // Migration Logic: If old data had 'balance' but no 'cash', move it.
-                        if (data.wallet && data.wallet.balance !== undefined && data.wallet.cash === undefined) {
-                            data.wallet.cash = data.wallet.balance;
-                            data.wallet.nonCash = 0;
-                            delete data.wallet.balance;
-                        }
-
-                        this.wallet = {...this.wallet, ...data.wallet}; // Merge carefully
+                        this.wallet = {...this.wallet, ...data.wallet};
                         this.pomo = {...this.pomo, ...data.pomo};
                         this.notes = data.notes || [];
                         this.savings = data.savings || [];
                         this.pomo.isRunning = false;
                         this.pomo.timer = null;
                         this.checkDailyReset();
-                    } else {
-                        // Attempt to migrate from v4 if v5 doesn't exist
-                        const oldSaved = localStorage.getItem('duo_hub_simple_v4');
-                        if (oldSaved) {
-                            const oldData = JSON.parse(oldSaved);
-                            this.wallet.cash = oldData.wallet.balance || 0;
-                            this.wallet.nonCash = 0;
-                            this.wallet.dailyLimit = oldData.wallet.dailyLimit || 200000;
-                            this.wallet.transactions = oldData.wallet.transactions || [];
-                            // Add default method to old transactions
-                            this.wallet.transactions.forEach(t => t.method = 'cash');
-                            
-                            this.savings = oldData.savings || [];
-                            this.notes = oldData.notes || [];
-                            this.saveData(); // Save immediately to new format
-                        }
                     }
                     this.$nextTick(() => lucide.createIcons());
                     
-                    // Auto-save watchers
                     this.$watch('wallet', () => this.saveData());
                     this.$watch('savings', () => this.saveData());
                     this.$watch('pomo.tasks', () => this.saveData());
@@ -571,7 +545,6 @@
                     return Math.min(Math.round((this.wallet.totalExpense / this.wallet.dailyLimit) * 100), 100) || 0;
                 },
 
-                // Finance Logic Updated
                 addTransaction() {
                     if(!this.tempTrx.amount || !this.tempTrx.note) return;
                     const amt = Number(this.tempTrx.amount);
@@ -581,10 +554,8 @@
                         if(method === 'cash') this.wallet.cash += amt;
                         else this.wallet.nonCash += amt;
                     } else {
-                        // Expense logic
                         if(method === 'cash') this.wallet.cash -= amt;
                         else this.wallet.nonCash -= amt;
-                        
                         this.wallet.totalExpense += amt; 
                     }
 
@@ -604,9 +575,8 @@
                     const index = this.wallet.transactions.findIndex(t => t.id === id);
                     if (index > -1) {
                         const trx = this.wallet.transactions[index];
-                        const method = trx.method || 'cash'; // fallback for old data
+                        const method = trx.method || 'cash';
 
-                        // Reverse the transaction
                         if(trx.type === 'income') {
                             if(method === 'cash') this.wallet.cash -= trx.amount;
                             else this.wallet.nonCash -= trx.amount;
@@ -619,7 +589,6 @@
                     }
                 },
 
-                // Savings Logic Updated
                 addSaving() {
                     if(!this.tempSaving.title || !this.tempSaving.target) return;
                     this.savings.push({
@@ -636,7 +605,7 @@
                     this.selectedSaving = item;
                     this.showTopUpModal = true;
                     this.topUpAmount = '';
-                    this.topUpSource = 'cash'; // reset default
+                    this.topUpSource = 'cash';
                     this.$nextTick(() => lucide.createIcons());
                 },
 
@@ -649,13 +618,11 @@
                         return;
                     }
 
-                    // Deduct from source
                     if(this.topUpSource === 'cash') this.wallet.cash -= amt;
                     else this.wallet.nonCash -= amt;
 
                     this.selectedSaving.current += amt;
                     
-                    // Record transaction
                     this.wallet.transactions.unshift({
                         id: Date.now(), 
                         type: 'expense', 
@@ -672,17 +639,11 @@
                 deleteSaving(id) {
                     if(confirm('Batalkan tabungan ini? Saldo akan dikembalikan ke Non-Tunai.')) {
                         const item = this.savings.find(s => s.id === id);
-                        // Default refund to Non-Cash (assuming savings are in bank)
                         this.wallet.nonCash += item.current;
-                        
-                        // Optional: Record refund transaction? 
-                        // For simplicity, we just add balance back, similar to deleting a transaction.
-                        
                         this.savings = this.savings.filter(s => s.id !== id);
                     }
                 },
 
-                // Pomodoro Logic
                 getCircleOffset() {
                     const total = this.pomo.mode === 'focus' ? this.pomo.focusTime : this.pomo.breakTime;
                     return 691 - (691 * this.pomo.timeLeft) / total;
@@ -743,32 +704,75 @@
                     this.pomo.tasks = this.pomo.tasks.filter(t => t.id !== id);
                 },
 
-                // Note Logic
-                addNote() {
+                // NOTE LOGIC UPDATED FOR EDITING
+                openNoteModal() {
+                    this.editingNoteId = null;
+                    this.tempNote = { title: '', content: '', isChecklist: false };
+                    this.showNoteModal = true;
+                },
+
+                openEditNote(note) {
+                    this.editingNoteId = note.id;
+                    this.tempNote.title = note.title;
+                    this.tempNote.isChecklist = (note.type === 'checklist');
+                    
+                    if (note.type === 'checklist') {
+                        // Convert checklist items back to string for textarea
+                        this.tempNote.content = note.items.map(i => i.text).join('\n');
+                    } else {
+                        this.tempNote.content = note.content;
+                    }
+                    this.showNoteModal = true;
+                },
+
+                saveNote() {
                     if(!this.tempNote.title) return;
                     
-                    let newNote = {
-                        id: Date.now(),
+                    let payload = {
                         title: this.tempNote.title,
                         type: this.tempNote.isChecklist ? 'checklist' : 'text'
                     };
 
                     if (this.tempNote.isChecklist) {
-                        newNote.items = this.tempNote.content
-                            .split('\n')
-                            .filter(line => line.trim() !== '')
-                            .map(line => ({ text: line, done: false }));
+                        const lines = this.tempNote.content.split('\n').filter(l => l.trim());
+                        payload.items = lines.map(line => {
+                            // Try to preserve 'done' status if editing and line text matches
+                            let wasDone = false;
+                            if (this.editingNoteId) {
+                                const oldNote = this.notes.find(n => n.id === this.editingNoteId);
+                                if (oldNote && oldNote.items) {
+                                    const match = oldNote.items.find(i => i.text === line);
+                                    if (match) wasDone = match.done;
+                                }
+                            }
+                            return { text: line, done: wasDone };
+                        });
                     } else {
-                        newNote.content = this.tempNote.content;
+                        payload.content = this.tempNote.content;
                     }
 
-                    this.notes.unshift(newNote);
-                    this.tempNote = { title: '', content: '', isChecklist: false };
+                    if (this.editingNoteId) {
+                        // UPDATE EXISTING
+                        const index = this.notes.findIndex(n => n.id === this.editingNoteId);
+                        if (index !== -1) {
+                            // Merge new data while keeping ID
+                            this.notes[index] = { ...this.notes[index], ...payload };
+                        }
+                    } else {
+                        // CREATE NEW
+                        payload.id = Date.now();
+                        this.notes.unshift(payload);
+                    }
+
                     this.showNoteModal = false;
+                    this.tempNote = { title: '', content: '', isChecklist: false };
+                    this.editingNoteId = null;
                 },
 
                 deleteNote(id) { 
-                    this.notes = this.notes.filter(n => n.id !== id); 
+                    if(confirm("Hapus catatan ini?")) {
+                        this.notes = this.notes.filter(n => n.id !== id); 
+                    }
                 }
             }
         }
